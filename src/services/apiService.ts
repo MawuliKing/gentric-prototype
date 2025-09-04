@@ -72,6 +72,7 @@ class ApiService {
                 headers: requestHeaders,
             };
 
+
             // Add body for non-GET requests
             if (data && method !== 'GET') {
                 requestInit.body = JSON.stringify(data);

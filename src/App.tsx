@@ -1,16 +1,18 @@
 
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ApiDemo, StorageDemo, Layout, AdminLayout, CustomerLayout, AgentLayout } from './components'
 import { ComponentShowcase } from './components/ComponentShowcase'
 import { AuthProvider } from './contexts/AuthContext'
+import { PrivateRoute } from './components/PrivateRoute'
 import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard } from './pages'
+import { ACCOUNT_TYPE } from './types/api'
 
 
 
 function App() {
   return (
     <Routes>
-      {/* Main App Routes */}
+      {/* Public Routes */}
       <Route path="/" element={
         <Layout>
           <Home />
@@ -31,11 +33,6 @@ function App() {
           <Login />
         </Layout>
       } />
-      <Route path="/profile" element={
-        <Layout>
-          <Profile />
-        </Layout>
-      } />
       <Route path="/storage-demo" element={
         <Layout>
           <StorageDemo />
@@ -47,22 +44,44 @@ function App() {
         </Layout>
       } />
 
-      {/* Dashboard Routes */}
+      {/* Protected Routes */}
+      <Route path="/profile" element={
+        <PrivateRoute>
+          <Layout>
+            <Profile />
+          </Layout>
+        </PrivateRoute>
+      } />
+
+      {/* Admin Dashboard - Only for ADMIN users */}
       <Route path="/admin" element={
-        <AdminLayout>
-          <AdminDashboard />
-        </AdminLayout>
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <AdminLayout>
+            <AdminDashboard />
+          </AdminLayout>
+        </PrivateRoute>
       } />
+
+      {/* Customer Dashboard - Only for CUSTOMER users */}
       <Route path="/customer" element={
-        <CustomerLayout>
-          <CustomerDashboard />
-        </CustomerLayout>
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.CUSTOMER]}>
+          <CustomerLayout>
+            <CustomerDashboard />
+          </CustomerLayout>
+        </PrivateRoute>
       } />
+
+      {/* Agent Dashboard - Only for USER (Agent) users */}
       <Route path="/agent" element={
-        <AgentLayout>
-          <AgentDashboard />
-        </AgentLayout>
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.USER]}>
+          <AgentLayout>
+            <AgentDashboard />
+          </AgentLayout>
+        </PrivateRoute>
       } />
+
+      {/* Catch all route - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

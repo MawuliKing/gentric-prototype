@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import EncryptedStorage, { UserData, TokenData } from '../services/encryptedStorage';
+import React, { createContext, useContext, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { useUser, useToken, useIsAuthenticated, useLogin, useLogout, useUpdateUser, useRefreshToken } from '../hooks/useAuth';
+import EncryptedStorage from '../services/encryptedStorage';
+import type { UserData, TokenData } from '../services/encryptedStorage';
 
 // Auth context interface
 interface AuthContextType {
@@ -7,7 +10,7 @@ interface AuthContextType {
     token: TokenData | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: UserData }>;
     logout: () => void;
     updateUserData: (userData: Partial<UserData>) => Promise<boolean>;
     refreshToken: () => Promise<boolean>;
@@ -21,169 +24,57 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-// Mock API functions (replace with your actual API calls)
-const mockLoginAPI = async (email: string, password: string): Promise<{
-    success: boolean;
-    data?: { user: UserData; token: TokenData };
-    error?: string;
-}> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock validation
-    if (email === 'demo@gentric.com' && password === 'password') {
-        const user: UserData = {
-            id: '1',
-            email: 'demo@gentric.com',
-            name: 'Demo User',
-            role: 'admin',
-            avatar: 'https://via.placeholder.com/150',
-            preferences: {
-                theme: 'light',
-                language: 'en',
-                notifications: true,
-            },
-            lastLogin: new Date().toISOString(),
-        };
-
-        const token: TokenData = {
-            accessToken: 'mock_access_token_' + Date.now(),
-            refreshToken: 'mock_refresh_token_' + Date.now(),
-            expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-            tokenType: 'Bearer',
-        };
-
-        return { success: true, data: { user, token } };
-    }
-
-    return { success: false, error: 'Invalid email or password' };
-};
-
-const mockRefreshTokenAPI = async (refreshToken: string): Promise<{
-    success: boolean;
-    data?: TokenData;
-    error?: string;
-}> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Mock refresh token validation
-    if (refreshToken.startsWith('mock_refresh_token_')) {
-        const newToken: TokenData = {
-            accessToken: 'mock_access_token_' + Date.now(),
-            refreshToken: 'mock_refresh_token_' + Date.now(),
-            expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-            tokenType: 'Bearer',
-        };
-
-        return { success: true, data: newToken };
-    }
-
-    return { success: false, error: 'Invalid refresh token' };
-};
 
 // Auth provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [user, setUser] = useState<UserData | null>(null);
-    const [token, setToken] = useState<TokenData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    // Use React Query hooks
+    const { data: user, isLoading: userLoading } = useUser();
+    const { data: token, isLoading: tokenLoading } = useToken();
+    const { data: isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
 
-    // Initialize auth state from storage
-    useEffect(() => {
-        const initializeAuth = () => {
-            try {
-                const storedUser = EncryptedStorage.getUserData();
-                const storedToken = EncryptedStorage.getToken();
-
-                if (storedUser && storedToken && EncryptedStorage.isAuthenticated()) {
-                    setUser(storedUser);
-                    setToken(storedToken);
-                } else {
-                    // Clear invalid data
-                    EncryptedStorage.clearAll();
-                }
-            } catch (error) {
-                console.error('Failed to initialize auth:', error);
-                EncryptedStorage.clearAll();
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        initializeAuth();
-    }, []);
+    const loginMutation = useLogin();
+    const logoutMutation = useLogout();
+    const updateUserMutation = useUpdateUser();
+    const refreshTokenMutation = useRefreshToken();
 
     // Auto-refresh token when it's about to expire
     useEffect(() => {
-        if (!token) return;
+        if (!token?.refreshToken) return;
 
         const checkTokenExpiry = () => {
-            if (EncryptedStorage.needsTokenRefresh()) {
-                refreshToken();
+            if (EncryptedStorage.needsTokenRefresh() && token.refreshToken) {
+                refreshTokenMutation.mutate(token.refreshToken);
             }
         };
 
         // Check every minute
         const interval = setInterval(checkTokenExpiry, 60000);
         return () => clearInterval(interval);
-    }, [token]);
+    }, [token, refreshTokenMutation]);
 
     // Login function
-    const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; user?: UserData }> => {
         try {
-            setIsLoading(true);
-
-            const response = await mockLoginAPI(email, password);
-
-            if (response.success && response.data) {
-                const { user: userData, token: tokenData } = response.data;
-
-                // Save to encrypted storage
-                const tokenSaved = EncryptedStorage.saveToken(tokenData);
-                const userSaved = EncryptedStorage.saveUserData(userData);
-
-                if (tokenSaved && userSaved) {
-                    setUser(userData);
-                    setToken(tokenData);
-                    return { success: true };
-                } else {
-                    return { success: false, error: 'Failed to save authentication data' };
-                }
-            } else {
-                return { success: false, error: response.error || 'Login failed' };
-            }
+            const result = await loginMutation.mutateAsync({ email, password });
+            return { success: true, user: result.user };
         } catch (error) {
-            console.error('Login error:', error);
-            return { success: false, error: 'An unexpected error occurred' };
-        } finally {
-            setIsLoading(false);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Login failed'
+            };
         }
     };
 
     // Logout function
     const logout = () => {
-        try {
-            EncryptedStorage.clearAll();
-            setUser(null);
-            setToken(null);
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
+        logoutMutation.mutate();
     };
 
     // Update user data
     const updateUserData = async (userData: Partial<UserData>): Promise<boolean> => {
         try {
-            if (!user) return false;
-
-            const updatedUser = { ...user, ...userData };
-            const success = EncryptedStorage.saveUserData(updatedUser);
-
-            if (success) {
-                setUser(updatedUser);
-            }
-
-            return success;
+            await updateUserMutation.mutateAsync(userData);
+            return true;
         } catch (error) {
             console.error('Update user data error:', error);
             return false;
@@ -194,31 +85,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const refreshToken = async (): Promise<boolean> => {
         try {
             if (!token?.refreshToken) return false;
-
-            const response = await mockRefreshTokenAPI(token.refreshToken);
-
-            if (response.success && response.data) {
-                const success = EncryptedStorage.saveToken(response.data);
-                if (success) {
-                    setToken(response.data);
-                    return true;
-                }
-            }
-
-            // If refresh fails, logout user
-            logout();
-            return false;
+            await refreshTokenMutation.mutateAsync(token.refreshToken);
+            return true;
         } catch (error) {
             console.error('Refresh token error:', error);
-            logout();
             return false;
         }
     };
 
+    const isLoading = userLoading || tokenLoading || authLoading || loginMutation.isPending;
+
     const value: AuthContextType = {
-        user,
-        token,
-        isAuthenticated: !!user && !!token && EncryptedStorage.isAuthenticated(),
+        user: user || null,
+        token: token || null,
+        isAuthenticated: isAuthenticated || false,
         isLoading,
         login,
         logout,

@@ -1,3 +1,31 @@
+// Account Types
+export const ACCOUNT_TYPE = {
+    ADMIN: 'ADMIN',
+    USER: 'USER',
+    CUSTOMER: 'CUSTOMER',
+} as const;
+
+export type ACCOUNT_TYPE = typeof ACCOUNT_TYPE[keyof typeof ACCOUNT_TYPE];
+
+// User data from API response
+export interface ApiUserData {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    otherName?: string;
+    phoneNumber?: string;
+    type: ACCOUNT_TYPE;
+    isEmailVerified: boolean;
+    lastLoginAt: string;
+}
+
+// Login response payload
+export interface LoginResponsePayload {
+    accessToken: string;
+    user: ApiUserData;
+}
+
 // Simple API Response Format
 export interface StructuredResponse {
     status: boolean;

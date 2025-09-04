@@ -50,15 +50,22 @@ const decrypt = (encryptedData: string): string | null => {
     }
 };
 
-// User data interface
+// User data interface (compatible with both old and new API formats)
 export interface UserData {
     id: string;
     email: string;
     name: string;
-    role?: string;
+    firstName?: string;
+    lastName?: string;
+    otherName?: string;
+    phoneNumber?: string;
+    type?: string; // For backward compatibility
+    role?: string; // For backward compatibility
     avatar?: string;
     preferences?: Record<string, any>;
     lastLogin?: string;
+    lastLoginAt?: string;
+    isEmailVerified?: boolean;
 }
 
 // Token data interface

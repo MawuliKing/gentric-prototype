@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Input, Card } from './';
 import { useAuth } from '../contexts/AuthContext';
+import { ACCOUNT_TYPE } from '../types/api';
 
 interface LoginFormProps {
     onSuccess?: () => void;
@@ -14,6 +16,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, className = '' 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Helper function to get user dashboard based on account type
+    const getUserDashboard = (userType: string): string => {
+        switch (userType as ACCOUNT_TYPE) {
+            case ACCOUNT_TYPE.ADMIN:
+                return '/admin';
+            case ACCOUNT_TYPE.USER:
+                return '/agent';
+            case ACCOUNT_TYPE.CUSTOMER:
+                return '/customer';
+            default:
+                return '/';
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,12 +41,25 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, className = '' 
         try {
             const result = await login(email, password);
 
-            if (result.success) {
+            if (result.success && result.user) {
                 onSuccess?.();
+
+                // Determine redirect destination
+                const intendedDestination = location.state?.from?.pathname;
+                const userDashboard = getUserDashboard(result.user.type || '');
+                const redirectTo = intendedDestination || userDashboard;
+
+                console.log('Login successful, redirecting to:', redirectTo);
+                console.log('User type:', result.user.type);
+                console.log('Intended destination:', intendedDestination);
+
+                // Navigate to the appropriate destination
+                navigate(redirectTo, { replace: true });
             } else {
                 setError(result.error || 'Login failed');
             }
         } catch (err) {
+            console.error('Login error:', err);
             setError('An unexpected error occurred');
         } finally {
             setIsSubmitting(false);
