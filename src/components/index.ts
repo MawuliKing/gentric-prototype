@@ -3,6 +3,8 @@ export { Button } from './Button'
 export { Card, CardHeader, CardContent, CardFooter } from './Card'
 export { Modal, ModalHeader, ModalBody, ModalFooter } from './Modal'
 export { DataTable } from './DataTable'
+export { Navigation } from './Navigation'
+export { Layout } from './Layout'
 
 // Form Components
 export { Input } from './Input'
