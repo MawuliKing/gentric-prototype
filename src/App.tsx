@@ -1,7 +1,7 @@
 
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Card, StatusBadge, DataTable, LoginForm, UserProfile, StorageDemo } from './components'
+import { Button, Card, StatusBadge, DataTable, LoginForm, UserProfile, StorageDemo, ApiDemo } from './components'
 import { ComponentShowcase } from './components/ComponentShowcase'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
@@ -14,6 +14,37 @@ function Home() {
         <p className="text-body-large text-secondary-600 max-w-2xl">
           Your comprehensive report generation platform for organizations. Create, manage, and distribute professional reports with ease.
         </p>
+      </div>
+
+      {/* Color Test Section */}
+      <div className="mb-8 p-6 bg-white rounded-lg shadow-soft border border-secondary-200">
+        <h2 className="text-heading-2 mb-4">Color System Test</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-primary-700 text-white p-4 rounded-md text-center">
+            <p className="font-semibold">Primary</p>
+            <p className="text-sm opacity-90">bg-primary-700</p>
+          </div>
+          <div className="bg-success-600 text-white p-4 rounded-md text-center">
+            <p className="font-semibold">Success</p>
+            <p className="text-sm opacity-90">bg-success-600</p>
+          </div>
+          <div className="bg-warning-600 text-white p-4 rounded-md text-center">
+            <p className="font-semibold">Warning</p>
+            <p className="text-sm opacity-90">bg-warning-600</p>
+          </div>
+          <div className="bg-error-600 text-white p-4 rounded-md text-center">
+            <p className="font-semibold">Error</p>
+            <p className="text-sm opacity-90">bg-error-600</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-4">
+          <Button variant="primary" size="md">Primary Button</Button>
+          <Button variant="secondary" size="md">Secondary Button</Button>
+          <Button variant="success" size="md">Success Button</Button>
+          <Button variant="warning" size="md">Warning Button</Button>
+          <Button variant="error" size="md">Error Button</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -310,6 +341,15 @@ function Navigation() {
             >
               Storage Demo
             </Link>
+            <Link
+              to="/api-demo"
+              className={`text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md ${location.pathname === '/api-demo'
+                ? 'text-primary-700 bg-primary-50'
+                : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+                }`}
+            >
+              API Demo
+            </Link>
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
@@ -362,6 +402,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/storage-demo" element={<StorageDemo />} />
+            <Route path="/api-demo" element={<ApiDemo />} />
           </Routes>
         </div>
       </main>

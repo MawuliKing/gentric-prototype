@@ -52,10 +52,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
     const disabledClasses = 'border-secondary-200 bg-secondary-50 text-secondary-400 cursor-not-allowed'
 
     const buttonClasses = `${baseClasses} ${disabled
-            ? disabledClasses
-            : error
-                ? errorClasses
-                : normalClasses
+        ? disabledClasses
+        : error
+            ? errorClasses
+            : normalClasses
         } ${className}`
 
     return (
@@ -103,10 +103,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
                                 key={option.value}
                                 type="button"
                                 className={`w-full px-3 py-2 text-left text-sm transition-colors duration-150 flex items-center ${option.disabled
-                                        ? 'text-secondary-400 cursor-not-allowed'
-                                        : option.value === value
-                                            ? 'bg-primary-50 text-primary-700'
-                                            : 'text-secondary-700 hover:bg-secondary-50'
+                                    ? 'text-secondary-400 cursor-not-allowed'
+                                    : option.value === value
+                                        ? 'bg-primary-50 text-primary-700'
+                                        : 'text-secondary-700 hover:bg-secondary-50'
                                     }`}
                                 onClick={() => {
                                     if (!option.disabled) {
