@@ -6,6 +6,11 @@ export { DataTable } from './DataTable'
 export { Navigation } from './Navigation'
 export { Layout } from './Layout'
 
+// Dashboard Layouts
+export { AdminLayout } from './layouts/AdminLayout'
+export { CustomerLayout } from './layouts/CustomerLayout'
+export { AgentLayout } from './layouts/AgentLayout'
+
 // Form Components
 export { Input } from './Input'
 export { Select } from './Select'

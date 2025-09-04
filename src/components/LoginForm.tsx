@@ -103,7 +103,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, className = '' 
                 <p className="text-sm text-secondary-600">
                     Demo credentials: <br />
                     <span className="font-mono text-xs bg-secondary-100 px-2 py-1 rounded">
-                        demo@gentric.com / password
+                        demo@gentric.com / Password@123
                     </span>
                 </p>
             </div>
