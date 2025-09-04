@@ -4,7 +4,7 @@ import { ApiDemo, StorageDemo, Layout, AdminLayout, CustomerLayout, AgentLayout 
 import { ComponentShowcase } from './components/ComponentShowcase'
 import { AuthProvider } from './contexts/AuthContext'
 import { PrivateRoute } from './components/PrivateRoute'
-import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard } from './pages'
+import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard, ProjectTypes, ProjectTypeDetails, FormBuilderPage } from './pages'
 import { ACCOUNT_TYPE } from './types/api'
 
 
@@ -59,6 +59,25 @@ function App() {
           <AdminLayout>
             <AdminDashboard />
           </AdminLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/admin/project-types" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <AdminLayout>
+            <ProjectTypes />
+          </AdminLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/admin/project-types/:id" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <AdminLayout>
+            <ProjectTypeDetails />
+          </AdminLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/admin/project-types/:projectTypeId/templates/:templateId/edit" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <FormBuilderPage />
         </PrivateRoute>
       } />
 

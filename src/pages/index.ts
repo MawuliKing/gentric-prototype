@@ -5,3 +5,6 @@ export { Profile } from './Profile'
 
 // Dashboards
 export { AdminDashboard, CustomerDashboard, AgentDashboard } from './dashboards'
+
+// Admin Pages
+export { ProjectTypes, ProjectTypeDetails, FormBuilderPage } from './dashboards/admin'

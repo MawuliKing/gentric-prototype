@@ -30,3 +30,6 @@ export { UserProfile } from './UserProfile'
 export { StorageDemo } from './StorageDemo'
 export { ApiDemo } from './ApiDemo'
 export { PrivateRoute } from './PrivateRoute'
+
+// Form Builder
+export { FormBuilder } from './FormBuilder'
