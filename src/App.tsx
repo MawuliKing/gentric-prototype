@@ -4,7 +4,7 @@ import { ApiDemo, StorageDemo, Layout, AdminLayout, CustomerLayout, AgentLayout 
 import { ComponentShowcase } from './components/ComponentShowcase'
 import { AuthProvider } from './contexts/AuthContext'
 import { PrivateRoute } from './components/PrivateRoute'
-import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard, ProjectTypes, ProjectTypeDetails, FormBuilderPage } from './pages'
+import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard, ProjectTypes, ProjectTypeDetails, FormBuilderPage, Agents, Customers } from './pages'
 import { ACCOUNT_TYPE } from './types/api'
 
 
@@ -80,6 +80,20 @@ function App() {
           <FormBuilderPage />
         </PrivateRoute>
       } />
+      <Route path="/admin/agents" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <AdminLayout>
+            <Agents />
+          </AdminLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/admin/customers" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+          <AdminLayout>
+            <Customers />
+          </AdminLayout>
+        </PrivateRoute>
+      } />
 
       {/* Customer Dashboard - Only for CUSTOMER users */}
       <Route path="/customer" element={
@@ -92,7 +106,7 @@ function App() {
 
       {/* Agent Dashboard - Only for USER (Agent) users */}
       <Route path="/agent" element={
-        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.USER]}>
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
           <AgentLayout>
             <AgentDashboard />
           </AgentLayout>

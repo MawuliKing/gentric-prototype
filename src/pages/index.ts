@@ -4,7 +4,7 @@ export { Login } from './Login'
 export { Profile } from './Profile'
 
 // Dashboards
-export { AdminDashboard, CustomerDashboard, AgentDashboard } from './dashboards'
+export { AdminDashboard, CustomerDashboard, AgentDashboard, Agents, Customers } from './dashboards'
 
 // Admin Pages
 export { ProjectTypes, ProjectTypeDetails, FormBuilderPage } from './dashboards/admin'

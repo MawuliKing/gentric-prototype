@@ -1,7 +1,7 @@
 // Account Types
 export const ACCOUNT_TYPE = {
     ADMIN: 'ADMIN',
-    USER: 'USER',
+    AGENT: 'AGENT',
     CUSTOMER: 'CUSTOMER',
 } as const;
 
