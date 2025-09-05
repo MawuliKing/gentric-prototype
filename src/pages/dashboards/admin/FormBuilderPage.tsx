@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FormBuilder, FormCategory } from '../../../components'
+import { FormBuilder } from '../../../components'
+import type { FormCategory } from '../../../components/FormBuilder'
 
 export const FormBuilderPage: React.FC = () => {
     const { projectTypeId, templateId } = useParams<{ projectTypeId: string; templateId: string }>()

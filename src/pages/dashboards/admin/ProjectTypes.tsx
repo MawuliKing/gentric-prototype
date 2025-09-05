@@ -1,75 +1,26 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, DataTable, Modal, ModalBody, ModalFooter, Input, StatusBadge } from '../../../components'
-
-interface ProjectType {
-    id: string
-    name: string
-    description: string
-    status: 'active' | 'inactive'
-    createdAt: string
-    projectCount: number
-    reportCount: number
-}
+import { useProjectTypes } from '../../../hooks/useProjectTypes'
+import type { ProjectType, CreateProjectTypeRequest } from '../../../types/api'
 
 export const ProjectTypes: React.FC = () => {
     const navigate = useNavigate()
+    const { projectTypes, loading, error, createProjectType, getProjectTypes, clearError } = useProjectTypes()
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-    const [projectTypes, setProjectTypes] = useState<ProjectType[]>([
-        {
-            id: '1',
-            name: 'Web Development',
-            description: 'Full-stack web applications and websites',
-            status: 'active',
-            createdAt: '2024-01-15',
-            projectCount: 12,
-            reportCount: 3
-        },
-        {
-            id: '2',
-            name: 'Mobile App',
-            description: 'iOS and Android mobile applications',
-            status: 'active',
-            createdAt: '2024-01-10',
-            projectCount: 8,
-            reportCount: 2
-        },
-        {
-            id: '3',
-            name: 'Data Analytics',
-            description: 'Data analysis and business intelligence projects',
-            status: 'active',
-            createdAt: '2024-01-05',
-            projectCount: 5,
-            reportCount: 4
-        },
-        {
-            id: '4',
-            name: 'E-commerce',
-            description: 'Online stores and e-commerce platforms',
-            status: 'inactive',
-            createdAt: '2023-12-20',
-            projectCount: 3,
-            reportCount: 1
-        },
-        {
-            id: '5',
-            name: 'AI/ML',
-            description: 'Artificial Intelligence and Machine Learning projects',
-            status: 'active',
-            createdAt: '2024-01-20',
-            projectCount: 2,
-            reportCount: 2
-        }
-    ])
+    const [isCreating, setIsCreating] = useState(false)
 
-    const [newProjectType, setNewProjectType] = useState({
+    const [newProjectType, setNewProjectType] = useState<CreateProjectTypeRequest>({
         name: '',
-        description: '',
-        status: 'active' as 'active' | 'inactive'
+        description: ''
     })
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({})
+
+    // Load project types on component mount
+    useEffect(() => {
+        getProjectTypes()
+    }, [getProjectTypes])
 
     const columns = [
         {
@@ -155,7 +106,7 @@ export const ProjectTypes: React.FC = () => {
         }
     ]
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         // Validate form
         const newErrors: { [key: string]: string } = {}
         if (!newProjectType.name.trim()) {
@@ -170,21 +121,26 @@ export const ProjectTypes: React.FC = () => {
             return
         }
 
-        // Add new project type
-        const projectType: ProjectType = {
-            id: Date.now().toString(),
-            name: newProjectType.name,
-            description: newProjectType.description,
-            status: newProjectType.status,
-            createdAt: new Date().toISOString().split('T')[0],
-            projectCount: 0,
-            reportCount: 0
-        }
+        setIsCreating(true)
+        clearError()
 
-        setProjectTypes([...projectTypes, projectType])
-        setNewProjectType({ name: '', description: '', status: 'active' })
-        setErrors({})
-        setIsAddModalOpen(false)
+        try {
+            const result = await createProjectType(newProjectType)
+
+            if (result) {
+                // Success - reset form and close modal
+                setNewProjectType({ name: '', description: '' })
+                setErrors({})
+                setIsAddModalOpen(false)
+            } else {
+                // Error is already set in the hook
+                console.error('Failed to create project type')
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err)
+        } finally {
+            setIsCreating(false)
+        }
     }
 
     const handleView = (projectType: ProjectType) => {
@@ -198,7 +154,8 @@ export const ProjectTypes: React.FC = () => {
 
     const handleDelete = (id: string) => {
         if (window.confirm('Are you sure you want to delete this project type?')) {
-            setProjectTypes(projectTypes.filter(pt => pt.id !== id))
+            // TODO: Implement delete functionality with API
+            console.log('Delete project type:', id)
         }
     }
 
@@ -219,6 +176,7 @@ export const ProjectTypes: React.FC = () => {
                 <Button
                     variant="primary"
                     onClick={() => setIsAddModalOpen(true)}
+                    disabled={loading}
                 >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -226,6 +184,38 @@ export const ProjectTypes: React.FC = () => {
                     Add Project Type
                 </Button>
             </div>
+
+            {/* Error Display */}
+            {error && (
+                <div className="bg-error-50 border border-error-200 rounded-md p-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-error-800">
+                                Error
+                            </h3>
+                            <div className="mt-2 text-sm text-error-700">
+                                {error}
+                            </div>
+                            <div className="mt-4">
+                                <div className="-mx-2 -my-1.5 flex">
+                                    <button
+                                        type="button"
+                                        className="bg-error-50 px-2 py-1.5 rounded-md text-sm font-medium text-error-800 hover:bg-error-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-error-50 focus:ring-error-600"
+                                        onClick={clearError}
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Project Types Table */}
             <DataTable
@@ -240,8 +230,9 @@ export const ProjectTypes: React.FC = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => {
                     setIsAddModalOpen(false)
-                    setNewProjectType({ name: '', description: '', status: 'active' })
+                    setNewProjectType({ name: '', description: '' })
                     setErrors({})
+                    clearError()
                 }}
                 title="Add New Project Type"
                 size="md"
@@ -255,30 +246,21 @@ export const ProjectTypes: React.FC = () => {
                             onChange={(e) => setNewProjectType({ ...newProjectType, name: e.target.value })}
                             error={errors.name}
                             required
+                            disabled={isCreating}
                         />
                         <div>
                             <label className="form-label">Description</label>
                             <textarea
-                                className="w-full px-3 py-2 text-sm border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                className="w-full px-3 py-2 text-sm border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:cursor-not-allowed"
                                 placeholder="Enter project type description"
                                 value={newProjectType.description}
                                 onChange={(e) => setNewProjectType({ ...newProjectType, description: e.target.value })}
                                 rows={3}
+                                disabled={isCreating}
                             />
                             {errors.description && (
                                 <p className="mt-1 text-sm text-error-600">{errors.description}</p>
                             )}
-                        </div>
-                        <div>
-                            <label className="form-label">Status</label>
-                            <select
-                                className="w-full px-3 py-2 text-sm border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                value={newProjectType.status}
-                                onChange={(e) => setNewProjectType({ ...newProjectType, status: e.target.value as 'active' | 'inactive' })}
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
                         </div>
                     </div>
                 </ModalBody>
@@ -287,17 +269,30 @@ export const ProjectTypes: React.FC = () => {
                         variant="secondary"
                         onClick={() => {
                             setIsAddModalOpen(false)
-                            setNewProjectType({ name: '', description: '', status: 'active' })
+                            setNewProjectType({ name: '', description: '' })
                             setErrors({})
+                            clearError()
                         }}
+                        disabled={isCreating}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleAdd}
+                        disabled={isCreating}
                     >
-                        Add Project Type
+                        {isCreating ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Creating...
+                            </>
+                        ) : (
+                            'Add Project Type'
+                        )}
                     </Button>
                 </ModalFooter>
             </Modal>

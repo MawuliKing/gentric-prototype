@@ -47,3 +47,25 @@ export interface RequestConfig {
     params?: Record<string, any>;
     headers?: Record<string, string>;
 }
+
+// Project Types
+export interface ProjectType {
+    id: string;
+    name: string;
+    description: string;
+    status: 'active' | 'inactive';
+    createdAt: string;
+    projectCount?: number;
+    reportCount?: number;
+}
+
+export interface CreateProjectTypeRequest {
+    name: string;
+    description: string;
+}
+
+export interface ProjectTypesResponse {
+    projectTypes: ProjectType[];
+    total: number;
+    totalPages: number;
+}

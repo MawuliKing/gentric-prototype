@@ -59,6 +59,7 @@ class ApiService {
         const fullURL = this.buildURL(url);
         const requestHeaders = this.buildHeaders(headers);
 
+
         // Build final URL with query parameters for GET requests
         let finalURL = fullURL;
         if (params && Object.keys(params).length > 0) {

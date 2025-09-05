@@ -38,7 +38,7 @@ export function DataTable<T extends Record<string, any>>({
         )
     }
 
-    if (data.length === 0) {
+    if (data?.length === 0) {
         return (
             <div className={`bg-white rounded-lg border border-secondary-200 shadow-soft ${className}`}>
                 <div className="p-8 text-center">
@@ -59,7 +59,7 @@ export function DataTable<T extends Record<string, any>>({
                 <table className="min-w-full divide-y divide-secondary-200">
                     <thead className="bg-secondary-50">
                         <tr>
-                            {columns.map((column, index) => (
+                            {columns?.map((column, index) => (
                                 <th
                                     key={index}
                                     className={`px-6 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider ${column.sortable ? 'cursor-pointer hover:bg-secondary-100' : ''
@@ -79,13 +79,13 @@ export function DataTable<T extends Record<string, any>>({
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-secondary-200">
-                        {data.map((item, rowIndex) => (
+                        {data?.map((item, rowIndex) => (
                             <tr
                                 key={rowIndex}
                                 className={`${onRowClick ? 'cursor-pointer hover:bg-secondary-50' : ''} transition-colors duration-150`}
                                 onClick={() => onRowClick?.(item)}
                             >
-                                {columns.map((column, colIndex) => (
+                                {columns?.map((column, colIndex) => (
                                     <td
                                         key={colIndex}
                                         className="px-6 py-4 whitespace-nowrap text-sm text-secondary-700"
