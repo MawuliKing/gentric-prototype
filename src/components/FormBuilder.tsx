@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Card, Input, Select } from './index'
+import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 
 export interface FormField {
     id: string
@@ -25,6 +26,13 @@ interface FormBuilderProps {
     onCategoriesChange: (categories: FormCategory[]) => void
     onSave: () => void
     onCancel: () => void
+    templateName?: string
+    templateDescription?: string
+    projectTypeName?: string
+    createdAt?: string
+    updatedAt?: string
+    isSaving?: boolean
+    saveError?: string | null
 }
 
 const FIELD_TYPES = [
@@ -41,7 +49,14 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     categories,
     onCategoriesChange,
     onSave,
-    onCancel
+    onCancel,
+    templateName,
+    templateDescription,
+    projectTypeName,
+    createdAt,
+    updatedAt,
+    isSaving = false,
+    saveError
 }) => {
     const [selectedFieldType, setSelectedFieldType] = useState<string>('')
     const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -230,19 +245,63 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <div className="bg-white border-b border-secondary-200 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div>
-                        <h1 className="text-heading-1">Form Builder</h1>
-                        <p className="text-body text-secondary-600 mt-1">Create and customize your report template</p>
+                        <h1 className="text-heading-1">
+                            {templateName ? `Form Builder - ${templateName}` : 'Form Builder'}
+                        </h1>
+                        <p className="text-body text-secondary-600 mt-1">
+                            {templateDescription || 'Create and customize your report template'}
+                        </p>
+                        {(projectTypeName || createdAt || updatedAt) && (
+                            <div className="flex items-center space-x-4 mt-2 text-sm text-secondary-500">
+                                {projectTypeName && <span>Project Type: {projectTypeName}</span>}
+                                {createdAt && <span>Created: {new Date(createdAt).toLocaleDateString()}</span>}
+                                {updatedAt && <span>Updated: {new Date(updatedAt).toLocaleDateString()}</span>}
+                            </div>
+                        )}
                     </div>
                     <div className="flex space-x-3">
-                        <Button variant="secondary" onClick={onCancel}>
+                        <Button variant="secondary" onClick={onCancel} disabled={isSaving}>
                             Cancel
                         </Button>
-                        <Button variant="primary" onClick={onSave}>
-                            Save Template
+                        <Button variant="primary" onClick={onSave} disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Template'
+                            )}
                         </Button>
                     </div>
                 </div>
             </div>
+
+            {/* Error Display */}
+            {saveError && (
+                <div className="bg-error-50 border border-error-200 px-6 py-4">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-error-800">
+                                    Error Saving Template
+                                </h3>
+                                <div className="mt-2 text-sm text-error-700">
+                                    {saveError}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex-1 p-6">
                 <div className="max-w-7xl mx-auto">
@@ -379,15 +438,17 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                                                                 variant="secondary"
                                                                 size="sm"
                                                                 onClick={() => setEditingCategory(category)}
+                                                                className="p-2"
                                                             >
-                                                                Edit
+                                                                <Edit className="w-4 h-4" />
                                                             </Button>
                                                             <Button
                                                                 variant="error"
                                                                 size="sm"
                                                                 onClick={() => deleteCategory(category.id)}
+                                                                className="p-2"
                                                             >
-                                                                Delete
+                                                                <Trash2 className="w-4 h-4" />
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -412,37 +473,43 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                                                                             </div>
                                                                             {renderFieldPreview(field)}
                                                                         </div>
-                                                                        <div className="flex flex-col space-y-1">
-                                                                            <Button
-                                                                                variant="secondary"
-                                                                                size="sm"
-                                                                                onClick={() => setEditingField(field)}
-                                                                            >
-                                                                                Edit
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="error"
-                                                                                size="sm"
-                                                                                onClick={() => deleteField(field.id)}
-                                                                            >
-                                                                                Delete
-                                                                            </Button>
+                                                                        <div className="flex flex-col space-y-2">
+                                                                            <div className="flex space-x-1">
+                                                                                <Button
+                                                                                    variant="secondary"
+                                                                                    size="sm"
+                                                                                    onClick={() => setEditingField(field)}
+                                                                                    className="p-2"
+                                                                                >
+                                                                                    <Edit className="w-4 h-4" />
+                                                                                </Button>
+                                                                                <Button
+                                                                                    variant="error"
+                                                                                    size="sm"
+                                                                                    onClick={() => deleteField(field.id)}
+                                                                                    className="p-2"
+                                                                                >
+                                                                                    <Trash2 className="w-4 h-4" />
+                                                                                </Button>
+                                                                            </div>
                                                                             <div className="flex flex-col space-y-1">
                                                                                 <Button
                                                                                     variant="secondary"
                                                                                     size="sm"
                                                                                     onClick={() => moveField(field.id, 'up')}
                                                                                     disabled={field.order === 0}
+                                                                                    className="p-2"
                                                                                 >
-                                                                                    ↑
+                                                                                    <ChevronUp className="w-4 h-4" />
                                                                                 </Button>
                                                                                 <Button
                                                                                     variant="secondary"
                                                                                     size="sm"
                                                                                     onClick={() => moveField(field.id, 'down')}
                                                                                     disabled={field.order === category.fields.length - 1}
+                                                                                    className="p-2"
                                                                                 >
-                                                                                    ↓
+                                                                                    <ChevronDown className="w-4 h-4" />
                                                                                 </Button>
                                                                             </div>
                                                                         </div>

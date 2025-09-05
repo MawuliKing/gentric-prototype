@@ -1,133 +1,152 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { FormBuilder } from '../../../components'
-import type { FormCategory } from '../../../components/FormBuilder'
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { FormBuilder } from '../../../components/FormBuilder';
+import type { FormCategory } from '../../../components/FormBuilder';
+import { useReportTemplateDetails } from '../../../hooks/useReportTemplateDetails';
+import { useReportTemplateSections } from '../../../hooks/useReportTemplateSections';
+import { Button } from '../../../components';
 
 export const FormBuilderPage: React.FC = () => {
-    const { projectTypeId, templateId } = useParams<{ projectTypeId: string; templateId: string }>()
-    const navigate = useNavigate()
-    const [categories, setCategories] = useState<FormCategory[]>([])
-    const [templateName, setTemplateName] = useState('')
-    const [isLoading, setIsLoading] = useState(true)
+    const { projectTypeId, templateId } = useParams<{ projectTypeId: string; templateId: string }>();
+    const navigate = useNavigate();
+    const [categories, setCategories] = useState<FormCategory[]>([]);
 
+    // Fetch report template details
+    const {
+        reportTemplate,
+        loading,
+        error
+    } = useReportTemplateDetails(templateId || '');
+
+    // Update report template sections
+    const {
+        updateTemplateSections,
+        isUpdating,
+        error: updateError
+    } = useReportTemplateSections();
+
+    // Convert sections to categories when data is loaded
     useEffect(() => {
-        // In a real app, this would fetch the template data from an API
-        // For now, we'll simulate loading and use sample data
-        const loadTemplate = async () => {
-            setIsLoading(true)
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 500))
-
-            // Sample data - in real app, this would come from API based on templateId
-            const sampleCategories: FormCategory[] = [
-                {
-                    id: '1',
-                    name: 'Basic Information',
-                    description: 'Basic project information',
+        if (reportTemplate) {
+            if (reportTemplate.sections && reportTemplate.sections.length > 0) {
+                // Convert sections to FormCategory format
+                const convertedCategories: FormCategory[] = reportTemplate.sections.map((section, index) => ({
+                    id: section.id,
+                    name: section.name,
+                    description: '', // Sections don't have description in the API response
+                    order: section.order || index,
+                    fields: section.fields.map((field, fieldIndex) => ({
+                        id: field.id,
+                        type: field.type as any, // Type conversion
+                        label: field.label,
+                        required: field.required,
+                        placeholder: field.placeholder,
+                        options: field.options,
+                        order: field.order || fieldIndex,
+                        categoryId: section.id
+                    }))
+                }));
+                setCategories(convertedCategories);
+            } else {
+                // Create default category with template name when no sections exist
+                const defaultCategory: FormCategory = {
+                    id: Date.now().toString(),
+                    name: reportTemplate.name,
+                    description: reportTemplate.description || '',
                     order: 0,
-                    fields: [
-                        {
-                            id: '1',
-                            type: 'text',
-                            label: 'Project Name',
-                            required: true,
-                            placeholder: 'Enter project name',
-                            order: 0,
-                            categoryId: '1'
-                        },
-                        {
-                            id: '2',
-                            type: 'textarea',
-                            label: 'Project Description',
-                            required: true,
-                            placeholder: 'Describe the project',
-                            order: 1,
-                            categoryId: '1'
-                        }
-                    ]
-                },
-                {
-                    id: '2',
-                    name: 'Technical Details',
-                    description: 'Technical specifications and requirements',
-                    order: 1,
-                    fields: [
-                        {
-                            id: '3',
-                            type: 'dropdown',
-                            label: 'Technology Stack',
-                            required: true,
-                            options: ['React', 'Vue', 'Angular', 'Node.js', 'Python'],
-                            order: 0,
-                            categoryId: '2'
-                        },
-                        {
-                            id: '4',
-                            type: 'number',
-                            label: 'Estimated Hours',
-                            required: false,
-                            placeholder: 'Enter estimated hours',
-                            order: 1,
-                            categoryId: '2'
-                        }
-                    ]
-                }
-            ]
-
-            setCategories(sampleCategories)
-            setTemplateName('Project Requirements Template')
-            setIsLoading(false)
+                    fields: []
+                };
+                setCategories([defaultCategory]);
+            }
         }
-
-        loadTemplate()
-    }, [templateId])
+    }, [reportTemplate]);
 
     const handleSave = async () => {
+        if (!templateId) return;
+
+        // Convert categories back to sections format
+        const sections = categories.map((category, index) => ({
+            id: category.id,
+            name: category.name,
+            order: category.order || index,
+            fields: category.fields.map((field, fieldIndex) => ({
+                id: field.id,
+                type: field.type,
+                label: field.label,
+                required: field.required,
+                placeholder: field.placeholder,
+                options: field.options,
+                order: field.order || fieldIndex
+            }))
+        }));
+
         try {
-            // In a real app, this would save to the API
-            console.log('Saving template:', {
-                templateId,
-                projectTypeId,
-                templateName,
-                categories
-            })
+            const result = await updateTemplateSections(templateId, sections);
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000))
-
-            // Navigate back to project type details
-            navigate(`/admin/project-types/${projectTypeId}`)
-        } catch (error) {
-            console.error('Error saving template:', error)
-            // Handle error (show toast, etc.)
+            if (result) {
+                // Success - navigate back to project type details
+                navigate(`/admin/project-types/${projectTypeId}`);
+            } else {
+                // Error is already set in the hook
+                console.error('Failed to save template');
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
         }
-    }
+    };
 
     const handleCancel = () => {
-        // Navigate back to project type details
-        navigate(`/admin/project-types/${projectTypeId}`)
-    }
+        navigate(`/admin/project-types/${projectTypeId}`);
+    };
 
-    if (isLoading) {
+    // Show loading state
+    if (loading) {
         return (
-            <div className="min-h-screen bg-secondary-50 flex items-center justify-center">
+            <div className="flex items-center justify-center min-h-64">
                 <div className="text-center">
-                    <div className="w-8 h-8 bg-primary-200 rounded-full mx-auto mb-4 animate-pulse"></div>
-                    <p className="text-body text-secondary-600">Loading form builder...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-secondary-600">Loading report template...</p>
                 </div>
             </div>
-        )
+        );
+    }
+
+    // Show error state
+    if (error || !reportTemplate) {
+        return (
+            <div className="text-center py-12">
+                <div className="w-12 h-12 bg-error-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-error-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 className="text-heading-3 text-secondary-900 mb-2">Error Loading Report Template</h3>
+                <p className="text-body text-secondary-600 mb-4">
+                    {error || 'Report template not found'}
+                </p>
+                <Button
+                    variant="primary"
+                    onClick={() => navigate(`/admin/project-types/${projectTypeId}`)}
+                >
+                    Back to Project Type
+                </Button>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-secondary-50">
-            <FormBuilder
-                categories={categories}
-                onCategoriesChange={setCategories}
-                onSave={handleSave}
-                onCancel={handleCancel}
-            />
-        </div>
-    )
-}
+        <FormBuilder
+            categories={categories}
+            onCategoriesChange={setCategories}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            templateName={reportTemplate.name}
+            templateDescription={reportTemplate.description}
+            projectTypeName={reportTemplate.projectType.name}
+            createdAt={reportTemplate.createdAt}
+            updatedAt={reportTemplate.updatedAt}
+            isSaving={isUpdating}
+            saveError={updateError}
+        />
+    );
+};

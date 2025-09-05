@@ -120,6 +120,10 @@ export interface UpdateReportTemplateRequest {
     description: string;
 }
 
+export interface UpdateReportTemplateSectionsRequest {
+    sections: ReportSection[];
+}
+
 export interface ReportTemplatesResponse {
     reportTemplates: ReportTemplate[];
     total: number;
