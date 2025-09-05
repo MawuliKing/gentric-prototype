@@ -2,209 +2,60 @@ import React, { useState } from 'react'
 import { Button, DataTable, Input, Modal, ModalBody, ModalFooter, Select, StatusBadge, Progress } from '../../../components'
 import { useCustomers } from '../../../hooks/useCustomers'
 import { useAgents } from '../../../hooks/useAgents'
-import type { CreateCustomerRequest, CreateAgentRequest } from '../../../types/api'
+import { useProjectTypes } from '../../../hooks/useProjectTypes'
+import { useProjects } from '../../../hooks/useProjects'
+import type { CreateCustomerRequest, CreateAgentRequest, CreateProjectRequest, UpdateProjectRequest, Project } from '../../../types/api'
 
-// Mock project data structure for UI demonstration
-interface Project {
-    id: string
-    name: string
-    type: string
-    description: string
-    status: 'active' | 'completed' | 'pending' | 'cancelled'
-    customerId: string
-    customerName: string
-    agentId: string
-    agentName: string
-    createdAt: string
-    updatedAt: string
-    dueDate: string
-    reportProgress: {
-        totalReports: number
-        completedReports: number
-        inProgressReports: number
-        pendingReports: number
-    }
-}
 
-// Mock data for demonstration
-const mockProjects: Project[] = [
-    {
-        id: '1',
-        name: 'Website Redesign Project',
-        type: 'Web Development',
-        description: 'Complete redesign of company website with modern UI/UX',
-        status: 'active',
-        customerId: '1',
-        customerName: 'Alice Johnson',
-        agentId: '1',
-        agentName: 'John Doe',
-        createdAt: '2024-01-01T09:00:00Z',
-        updatedAt: '2024-01-15T10:30:00Z',
-        dueDate: '2024-03-15T17:00:00Z',
-        reportProgress: {
-            totalReports: 8,
-            completedReports: 3,
-            inProgressReports: 2,
-            pendingReports: 3
-        }
-    },
-    {
-        id: '2',
-        name: 'Mobile App Development',
-        type: 'Mobile Development',
-        description: 'iOS and Android app for customer service management',
-        status: 'active',
-        customerId: '2',
-        customerName: 'Bob Smith',
-        agentId: '2',
-        agentName: 'Jane Smith',
-        createdAt: '2024-01-05T14:30:00Z',
-        updatedAt: '2024-01-14T16:45:00Z',
-        dueDate: '2024-04-30T17:00:00Z',
-        reportProgress: {
-            totalReports: 12,
-            completedReports: 5,
-            inProgressReports: 3,
-            pendingReports: 4
-        }
-    },
-    {
-        id: '3',
-        name: 'Database Migration',
-        type: 'Infrastructure',
-        description: 'Migrate legacy database to cloud infrastructure',
-        status: 'pending',
-        customerId: '3',
-        customerName: 'Carol Williams',
-        agentId: '3',
-        agentName: 'Mike Johnson',
-        createdAt: '2024-01-10T11:20:00Z',
-        updatedAt: '2024-01-10T11:20:00Z',
-        dueDate: '2024-02-28T17:00:00Z',
-        reportProgress: {
-            totalReports: 6,
-            completedReports: 0,
-            inProgressReports: 0,
-            pendingReports: 6
-        }
-    },
-    {
-        id: '4',
-        name: 'E-commerce Platform',
-        type: 'Web Development',
-        description: 'Build comprehensive e-commerce solution with payment integration',
-        status: 'active',
-        customerId: '4',
-        customerName: 'David Brown',
-        agentId: '4',
-        agentName: 'Sarah Wilson',
-        createdAt: '2023-12-15T10:15:00Z',
-        updatedAt: '2024-01-15T09:15:00Z',
-        dueDate: '2024-05-15T17:00:00Z',
-        reportProgress: {
-            totalReports: 15,
-            completedReports: 8,
-            inProgressReports: 4,
-            pendingReports: 3
-        }
-    },
-    {
-        id: '5',
-        name: 'Security Audit',
-        type: 'Security',
-        description: 'Comprehensive security audit and penetration testing',
-        status: 'completed',
-        customerId: '5',
-        customerName: 'Eva Davis',
-        agentId: '5',
-        agentName: 'David Brown',
-        createdAt: '2023-11-01T08:00:00Z',
-        updatedAt: '2023-12-20T14:30:00Z',
-        dueDate: '2023-12-31T17:00:00Z',
-        reportProgress: {
-            totalReports: 10,
-            completedReports: 10,
-            inProgressReports: 0,
-            pendingReports: 0
-        }
-    },
-    {
-        id: '6',
-        name: 'API Integration',
-        type: 'Integration',
-        description: 'Integrate third-party APIs for payment and shipping',
-        status: 'cancelled',
-        customerId: '2',
-        customerName: 'Bob Smith',
-        agentId: '1',
-        agentName: 'John Doe',
-        createdAt: '2023-10-15T11:45:00Z',
-        updatedAt: '2023-11-30T16:00:00Z',
-        dueDate: '2023-12-15T17:00:00Z',
-        reportProgress: {
-            totalReports: 5,
-            completedReports: 2,
-            inProgressReports: 1,
-            pendingReports: 2
-        }
-    }
-]
-
-const projectTypes = [
-    { value: 'Web Development', label: 'Web Development' },
-    { value: 'Mobile Development', label: 'Mobile Development' },
-    { value: 'Infrastructure', label: 'Infrastructure' },
-    { value: 'Security', label: 'Security' },
-    { value: 'Integration', label: 'Integration' },
-    { value: 'Consulting', label: 'Consulting' }
-]
 
 const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'cancelled', label: 'Cancelled' }
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'CANCELLED', label: 'Cancelled' }
 ]
 
 export const Projects: React.FC = () => {
-    const [projects, setProjects] = useState<Project[]>(mockProjects)
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [typeFilter, setTypeFilter] = useState<string>('')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [editingProject, setEditingProject] = useState<Project | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
 
     // Modals for adding new customers and agents
     const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false)
     const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false)
 
-    // Use hooks for customers and agents
+    // Use hooks for customers, agents, project types, and projects
     const { customers, createCustomer, isCreating: isCreatingCustomer } = useCustomers({ page: 1, pageSize: 100 })
     const { agents, createAgent, isCreating: isCreatingAgent } = useAgents({ page: 1, pageSize: 100 })
+    const { projectTypes, loading: projectTypesLoading } = useProjectTypes({ page: 1, pageSize: 100 })
+    const { 
+        projects, 
+        loading: projectsLoading, 
+        createProject, 
+        updateProject,
+        isCreating: isCreatingProject,
+        isUpdating: isUpdatingProject
+    } = useProjects({ page: 1, pageSize: 100 })
 
-    const [newProject, setNewProject] = useState({
+    const [newProject, setNewProject] = useState<CreateProjectRequest>({
         name: '',
-        type: '',
         description: '',
-        status: 'pending' as const,
+        projectTypeId: '',
+        assignedAgentId: '',
         customerId: '',
-        customerName: '',
-        agentId: '',
-        agentName: '',
         dueDate: ''
     })
 
-    const [editProject, setEditProject] = useState({
+    const [editProject, setEditProject] = useState<UpdateProjectRequest>({
         name: '',
-        type: '',
         description: '',
-        status: 'active' as 'active' | 'completed' | 'pending' | 'cancelled',
+        projectTypeId: '',
+        assignedAgentId: '',
         customerId: '',
-        customerName: '',
-        agentId: '',
-        agentName: '',
+        status: 'PENDING',
         dueDate: ''
     })
 
@@ -231,16 +82,22 @@ export const Projects: React.FC = () => {
     const [customerErrors, setCustomerErrors] = useState<{ [key: string]: string }>({})
     const [agentErrors, setAgentErrors] = useState<{ [key: string]: string }>({})
 
+    // Transform project types for Select component
+    const projectTypeOptions = projectTypes.map(pt => ({
+        value: pt.id,
+        label: pt.name
+    }))
+
     // Filter projects based on search and filters
     const filteredProjects = projects.filter(project => {
         const matchesSearch = searchTerm === '' ||
             project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.agentName.toLowerCase().includes(searchTerm.toLowerCase())
+            project.projectType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (project.customer?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (project.assignedAgent?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesStatus = statusFilter === '' || project.status === statusFilter
-        const matchesType = typeFilter === '' || project.type === typeFilter
+        const matchesType = typeFilter === '' || project.projectType.id === typeFilter
 
         return matchesSearch && matchesStatus && matchesType
     })
@@ -252,73 +109,71 @@ export const Projects: React.FC = () => {
             render: (_: any, project: Project) => (
                 <div>
                     <div className="font-medium text-secondary-900">{project.name}</div>
-                    <div className="text-sm text-secondary-500">{project.type}</div>
+                    <div className="text-sm text-secondary-500">{project.projectType.name}</div>
                 </div>
             )
         },
         {
-            key: 'customerName' as keyof Project,
+            key: 'customer' as keyof Project,
             title: 'Customer',
-            render: (value: string) => (
-                <span className="text-sm font-medium text-secondary-900">{value}</span>
+            render: (_: any, project: Project) => (
+                <span className="text-sm font-medium text-secondary-900 truncate max-w-[120px] block" title={project.customer?.fullName || 'Unassigned'}>
+                    {project.customer?.fullName || 'Unassigned'}
+                </span>
             )
         },
         {
-            key: 'agentName' as keyof Project,
+            key: 'assignedAgent' as keyof Project,
             title: 'Agent',
-            render: (value: string) => (
-                <span className="text-sm font-medium text-secondary-900">{value}</span>
+            render: (_: any, project: Project) => (
+                <span className="text-sm font-medium text-secondary-900 truncate max-w-[120px] block" title={project.assignedAgent?.fullName || 'Unassigned'}>
+                    {project.assignedAgent?.fullName || 'Unassigned'}
+                </span>
             )
         },
         {
             key: 'status' as keyof Project,
             title: 'Status',
-            render: (value: string) => (
+            render: (_: any, project: Project) => (
                 <StatusBadge
-                    status={value === 'active' ? 'success' : value === 'completed' ? 'info' : value === 'pending' ? 'warning' : 'error'}
+                    status={project.status === 'ACTIVE' ? 'success' : project.status === 'COMPLETED' ? 'info' : project.status === 'PENDING' ? 'warning' : 'error'}
                 >
-                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                    {project.status ? project.status.charAt(0).toUpperCase() + project.status.slice(1).toLowerCase() : 'Pending'}
                 </StatusBadge>
             )
         },
         {
             key: 'reportProgress' as keyof Project,
             title: 'Report Progress',
-            render: (value: Project['reportProgress']) => (
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-secondary-600">Progress</span>
-                        <span className="font-medium text-secondary-900">
-                            {value.completedReports}/{value.totalReports}
-                        </span>
+            render: (_: any, project: Project) => {
+                const progress = project.reportProgress || { totalReports: 0, completedReports: 0, inProgressReports: 0, pendingReports: 0 }
+                return (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-secondary-600">Progress</span>
+                            <span className="font-medium text-secondary-900">
+                                {progress.completedReports}/{progress.totalReports}
+                            </span>
+                        </div>
+                        <Progress
+                            value={progress.totalReports > 0 ? (progress.completedReports / progress.totalReports) * 100 : 0}
+                            size="sm"
+                            className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-secondary-500">
+                            <span>{progress.completedReports} completed</span>
+                            <span>{progress.inProgressReports} in progress</span>
+                            <span>{progress.pendingReports} pending</span>
+                        </div>
                     </div>
-                    <Progress
-                        value={(value.completedReports / value.totalReports) * 100}
-                        size="sm"
-                        className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-secondary-500">
-                        <span>{value.completedReports} completed</span>
-                        <span>{value.inProgressReports} in progress</span>
-                        <span>{value.pendingReports} pending</span>
-                    </div>
-                </div>
-            )
-        },
-        {
-            key: 'dueDate' as keyof Project,
-            title: 'Due Date',
-            render: (value: string) => (
-                <span className="text-sm text-secondary-600">
-                    {new Date(value).toLocaleDateString()}
-                </span>
-            )
+                )
+            }
         },
         {
             key: 'actions' as keyof Project,
             title: 'Actions',
             render: (_: any, project: Project) => (
-                <div className="flex space-x-2">
+                <div className="flex space-x-1 min-w-[120px]">
                     <Button
                         variant="primary"
                         size="sm"
@@ -326,6 +181,7 @@ export const Projects: React.FC = () => {
                             e.stopPropagation()
                             handleView(project)
                         }}
+                        className="text-xs px-2 py-1"
                     >
                         View
                     </Button>
@@ -336,6 +192,7 @@ export const Projects: React.FC = () => {
                             e.stopPropagation()
                             handleEdit(project)
                         }}
+                        className="text-xs px-2 py-1"
                     >
                         Edit
                     </Button>
@@ -350,20 +207,11 @@ export const Projects: React.FC = () => {
         if (!newProject.name.trim()) {
             newErrors.name = 'Project name is required'
         }
-        if (!newProject.type) {
-            newErrors.type = 'Project type is required'
+        if (!newProject.projectTypeId) {
+            newErrors.projectTypeId = 'Project type is required'
         }
         if (!newProject.description.trim()) {
             newErrors.description = 'Description is required'
-        }
-        if (!newProject.customerId) {
-            newErrors.customerId = 'Customer is required'
-        }
-        if (!newProject.agentId) {
-            newErrors.agentId = 'Agent is required'
-        }
-        if (!newProject.dueDate) {
-            newErrors.dueDate = 'Due date is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -371,41 +219,23 @@ export const Projects: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            const newProjectData: Project = {
-                id: Date.now().toString(),
-                ...newProject,
-                customerId: Date.now().toString(),
-                agentId: Date.now().toString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                reportProgress: {
-                    totalReports: 0,
-                    completedReports: 0,
-                    inProgressReports: 0,
-                    pendingReports: 0
-                }
+        try {
+            const result = await createProject(newProject)
+            if (result) {
+                setNewProject({
+                    name: '',
+                    description: '',
+                    projectTypeId: '',
+                    assignedAgentId: '',
+                    customerId: '',
+                    dueDate: ''
+                })
+                setErrors({})
+                setIsAddModalOpen(false)
             }
-
-            setProjects([...projects, newProjectData])
-            setNewProject({
-                name: '',
-                type: '',
-                description: '',
-                status: 'pending',
-                customerId: '',
-                customerName: '',
-                agentId: '',
-                agentName: '',
-                dueDate: ''
-            })
-            setErrors({})
-            setIsAddModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        } catch (error) {
+            console.error('Failed to create project:', error)
+        }
     }
 
     const handleUpdate = async () => {
@@ -413,23 +243,14 @@ export const Projects: React.FC = () => {
 
         // Validate form
         const newErrors: { [key: string]: string } = {}
-        if (!editProject.name.trim()) {
+        if (!editProject.name?.trim()) {
             newErrors.name = 'Project name is required'
         }
-        if (!editProject.type) {
-            newErrors.type = 'Project type is required'
+        if (!editProject.projectTypeId) {
+            newErrors.projectTypeId = 'Project type is required'
         }
-        if (!editProject.description.trim()) {
+        if (!editProject.description?.trim()) {
             newErrors.description = 'Description is required'
-        }
-        if (!editProject.customerName.trim()) {
-            newErrors.customerName = 'Customer name is required'
-        }
-        if (!editProject.agentName.trim()) {
-            newErrors.agentName = 'Agent name is required'
-        }
-        if (!editProject.dueDate) {
-            newErrors.dueDate = 'Due date is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -437,32 +258,25 @@ export const Projects: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setProjects(projects.map(project =>
-                project.id === editingProject.id
-                    ? { ...project, ...editProject, updatedAt: new Date().toISOString() }
-                    : project
-            ))
-
-            setEditProject({
-                name: '',
-                type: '',
-                description: '',
-                status: 'active',
-                customerId: '',
-                customerName: '',
-                agentId: '',
-                agentName: '',
-                dueDate: ''
-            })
-            setEditErrors({})
-            setEditingProject(null)
-            setIsEditModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        try {
+            const result = await updateProject(editingProject.id, editProject)
+            if (result) {
+                setEditProject({
+                    name: '',
+                    description: '',
+                    projectTypeId: '',
+                    assignedAgentId: '',
+                    customerId: '',
+                    status: 'PENDING',
+                    dueDate: ''
+                })
+                setEditErrors({})
+                setEditingProject(null)
+                setIsEditModalOpen(false)
+            }
+        } catch (error) {
+            console.error('Failed to update project:', error)
+        }
     }
 
     const handleView = (project: Project) => {
@@ -474,14 +288,12 @@ export const Projects: React.FC = () => {
         setEditingProject(project)
         setEditProject({
             name: project.name,
-            type: project.type,
             description: project.description,
-            status: project.status,
-            customerId: project.customerId,
-            customerName: project.customerName,
-            agentId: project.agentId,
-            agentName: project.agentName,
-            dueDate: project.dueDate
+            projectTypeId: project.projectType.id,
+            assignedAgentId: project.assignedAgent?.id || '',
+            customerId: project.customer?.id || '',
+            status: project.status || 'PENDING',
+            dueDate: project.dueDate || ''
         })
         setEditErrors({})
         setIsEditModalOpen(true)
@@ -588,7 +400,7 @@ export const Projects: React.FC = () => {
                 <Button
                     variant="primary"
                     onClick={() => setIsAddModalOpen(true)}
-                    disabled={isLoading}
+                    disabled={projectsLoading}
                 >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -626,8 +438,9 @@ export const Projects: React.FC = () => {
                             onChange={(e) => setTypeFilter(e.target.value)}
                             options={[
                                 { value: '', label: 'All Types' },
-                                ...projectTypes
+                                ...projectTypeOptions
                             ]}
+                            disabled={projectTypesLoading}
                         />
                     </div>
                     <div className="flex items-end">
@@ -672,7 +485,7 @@ export const Projects: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Active Projects</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {projects.filter(p => p.status === 'active').length}
+                                {projects.filter(p => p.status === 'ACTIVE').length}
                             </p>
                         </div>
                     </div>
@@ -690,7 +503,7 @@ export const Projects: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Completed</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {projects.filter(p => p.status === 'completed').length}
+                                {projects.filter(p => p.status === 'COMPLETED').length}
                             </p>
                         </div>
                     </div>
@@ -708,7 +521,7 @@ export const Projects: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Pending</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {projects.filter(p => p.status === 'pending').length}
+                                {projects.filter(p => p.status === 'PENDING').length}
                             </p>
                         </div>
                     </div>
@@ -716,12 +529,16 @@ export const Projects: React.FC = () => {
             </div>
 
             {/* Projects Table */}
-            <DataTable
-                data={filteredProjects}
-                columns={columns}
-                loading={isLoading}
-                emptyMessage="No projects found. Click 'Add Project' to create your first project."
-            />
+            <div className="bg-white rounded-lg border border-secondary-200 shadow-soft overflow-hidden">
+                <div className="overflow-x-auto">
+                    <DataTable
+                        data={filteredProjects}
+                        columns={columns}
+                        loading={projectsLoading}
+                        emptyMessage="No projects found. Click 'Add Project' to create your first project."
+                    />
+                </div>
+            </div>
 
             {/* Add Project Modal */}
             <Modal
@@ -730,13 +547,10 @@ export const Projects: React.FC = () => {
                     setIsAddModalOpen(false)
                     setNewProject({
                         name: '',
-                        type: '',
                         description: '',
-                        status: 'pending',
+                        projectTypeId: '',
+                        assignedAgentId: '',
                         customerId: '',
-                        customerName: '',
-                        agentId: '',
-                        agentName: '',
                         dueDate: ''
                     })
                     setErrors({})
@@ -753,17 +567,17 @@ export const Projects: React.FC = () => {
                             onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                             error={errors.name}
                             required
-                            disabled={isLoading}
+                            disabled={isCreatingProject}
                         />
                         <Select
                             label="Project Type"
                             placeholder="Select project type"
-                            value={newProject.type}
-                            onChange={(e) => setNewProject({ ...newProject, type: e.target.value })}
-                            options={projectTypes}
-                            error={errors.type}
+                            value={newProject.projectTypeId}
+                            onChange={(e) => setNewProject({ ...newProject, projectTypeId: e.target.value })}
+                            options={projectTypeOptions}
+                            error={errors.projectTypeId}
                             required
-                            disabled={isLoading}
+                            disabled={isCreatingProject || projectTypesLoading}
                         />
                         <div>
                             <label className="form-label">Description</label>
@@ -773,7 +587,7 @@ export const Projects: React.FC = () => {
                                 value={newProject.description}
                                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                                 rows={3}
-                                disabled={isLoading}
+                                disabled={isCreatingProject}
                             />
                             {errors.description && (
                                 <p className="mt-1 text-sm text-error-600">{errors.description}</p>
@@ -786,30 +600,22 @@ export const Projects: React.FC = () => {
                                     <Select
                                         placeholder="Select customer"
                                         value={newProject.customerId}
-                                        onChange={(e) => {
-                                            const customer = customers.find(c => c.id === e.target.value)
-                                            setNewProject({
-                                                ...newProject,
-                                                customerId: e.target.value,
-                                                customerName: customer ? `${customer.firstName} ${customer.lastName}` : ''
-                                            })
-                                        }}
+                                        onChange={(e) => setNewProject({ ...newProject, customerId: e.target.value })}
                                         options={[
-                                            { value: '', label: 'Select customer' },
+                                            { value: '', label: 'Select customer (optional)' },
                                             ...customers.map(customer => ({
                                                 value: customer.id,
                                                 label: `${customer.firstName} ${customer.lastName} (${customer.email})`
                                             }))
                                         ]}
                                         error={errors.customerId}
-                                        required
-                                        disabled={isLoading}
+                                        disabled={isCreatingProject}
                                     />
                                     <Button
                                         variant="secondary"
                                         size="sm"
                                         onClick={() => setIsAddCustomerModalOpen(true)}
-                                        disabled={isLoading}
+                                        disabled={isCreatingProject}
                                         className="whitespace-nowrap"
                                     >
                                         Add New
@@ -824,31 +630,23 @@ export const Projects: React.FC = () => {
                                 <div className="flex gap-2">
                                     <Select
                                         placeholder="Select agent"
-                                        value={newProject.agentId}
-                                        onChange={(e) => {
-                                            const agent = agents.find(a => a.id === e.target.value)
-                                            setNewProject({
-                                                ...newProject,
-                                                agentId: e.target.value,
-                                                agentName: agent ? `${agent.firstName} ${agent.lastName}` : ''
-                                            })
-                                        }}
+                                        value={newProject.assignedAgentId}
+                                        onChange={(e) => setNewProject({ ...newProject, assignedAgentId: e.target.value })}
                                         options={[
-                                            { value: '', label: 'Select agent' },
+                                            { value: '', label: 'Select agent (optional)' },
                                             ...agents.map(agent => ({
                                                 value: agent.id,
                                                 label: `${agent.firstName} ${agent.lastName} (${agent.email})`
                                             }))
                                         ]}
-                                        error={errors.agentId}
-                                        required
-                                        disabled={isLoading}
+                                        error={errors.assignedAgentId}
+                                        disabled={isCreatingProject}
                                     />
                                     <Button
                                         variant="secondary"
                                         size="sm"
                                         onClick={() => setIsAddAgentModalOpen(true)}
-                                        disabled={isLoading}
+                                        disabled={isCreatingProject}
                                         className="whitespace-nowrap"
                                     >
                                         Add New
@@ -865,8 +663,7 @@ export const Projects: React.FC = () => {
                             value={newProject.dueDate}
                             onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
                             error={errors.dueDate}
-                            required
-                            disabled={isLoading}
+                            disabled={isCreatingProject}
                         />
                     </div>
                 </ModalBody>
@@ -877,27 +674,24 @@ export const Projects: React.FC = () => {
                             setIsAddModalOpen(false)
                             setNewProject({
                                 name: '',
-                                type: '',
                                 description: '',
-                                status: 'pending',
+                                projectTypeId: '',
+                                assignedAgentId: '',
                                 customerId: '',
-                                customerName: '',
-                                agentId: '',
-                                agentName: '',
                                 dueDate: ''
                             })
                             setErrors({})
                         }}
-                        disabled={isLoading}
+                        disabled={isCreatingProject}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleAdd}
-                        disabled={isLoading}
+                        disabled={isCreatingProject}
                     >
-                        {isLoading ? (
+                        {isCreatingProject ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -919,13 +713,11 @@ export const Projects: React.FC = () => {
                     setIsEditModalOpen(false)
                     setEditProject({
                         name: '',
-                        type: '',
                         description: '',
-                        status: 'active',
+                        projectTypeId: '',
+                        assignedAgentId: '',
                         customerId: '',
-                        customerName: '',
-                        agentId: '',
-                        agentName: '',
+                        status: 'PENDING',
                         dueDate: ''
                     })
                     setEditErrors({})
@@ -943,17 +735,17 @@ export const Projects: React.FC = () => {
                             onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
                             error={editErrors.name}
                             required
-                            disabled={isLoading}
+                            disabled={isCreatingProject}
                         />
                         <Select
                             label="Project Type"
                             placeholder="Select project type"
-                            value={editProject.type}
-                            onChange={(e) => setEditProject({ ...editProject, type: e.target.value })}
-                            options={projectTypes}
-                            error={editErrors.type}
+                            value={editProject.projectTypeId}
+                            onChange={(e) => setEditProject({ ...editProject, projectTypeId: e.target.value })}
+                            options={projectTypeOptions}
+                            error={editErrors.projectTypeId}
                             required
-                            disabled={isLoading}
+                            disabled={isUpdatingProject || projectTypesLoading}
                         />
                         <div>
                             <label className="form-label">Description</label>
@@ -963,31 +755,47 @@ export const Projects: React.FC = () => {
                                 value={editProject.description}
                                 onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
                                 rows={3}
-                                disabled={isLoading}
+                                disabled={isCreatingProject}
                             />
                             {editErrors.description && (
                                 <p className="mt-1 text-sm text-error-600">{editErrors.description}</p>
                             )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input
-                                label="Customer Name"
-                                placeholder="Enter customer name"
-                                value={editProject.customerName}
-                                onChange={(e) => setEditProject({ ...editProject, customerName: e.target.value })}
-                                error={editErrors.customerName}
-                                required
-                                disabled={isLoading}
-                            />
-                            <Input
-                                label="Agent Name"
-                                placeholder="Enter agent name"
-                                value={editProject.agentName}
-                                onChange={(e) => setEditProject({ ...editProject, agentName: e.target.value })}
-                                error={editErrors.agentName}
-                                required
-                                disabled={isLoading}
-                            />
+                            <div>
+                                <label className="form-label">Customer</label>
+                                <Select
+                                    placeholder="Select customer"
+                                    value={editProject.customerId}
+                                    onChange={(e) => setEditProject({ ...editProject, customerId: e.target.value })}
+                                    options={[
+                                        { value: '', label: 'Select customer (optional)' },
+                                        ...customers.map(customer => ({
+                                            value: customer.id,
+                                            label: `${customer.firstName} ${customer.lastName} (${customer.email})`
+                                        }))
+                                    ]}
+                                    error={editErrors.customerId}
+                                    disabled={isUpdatingProject}
+                                />
+                            </div>
+                            <div>
+                                <label className="form-label">Agent</label>
+                                <Select
+                                    placeholder="Select agent"
+                                    value={editProject.assignedAgentId}
+                                    onChange={(e) => setEditProject({ ...editProject, assignedAgentId: e.target.value })}
+                                    options={[
+                                        { value: '', label: 'Select agent (optional)' },
+                                        ...agents.map(agent => ({
+                                            value: agent.id,
+                                            label: `${agent.firstName} ${agent.lastName} (${agent.email})`
+                                        }))
+                                    ]}
+                                    error={editErrors.assignedAgentId}
+                                    disabled={isUpdatingProject}
+                                />
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input
@@ -997,7 +805,7 @@ export const Projects: React.FC = () => {
                                 onChange={(e) => setEditProject({ ...editProject, dueDate: e.target.value })}
                                 error={editErrors.dueDate}
                                 required
-                                disabled={isLoading}
+                                disabled={isCreatingProject}
                             />
                             <Select
                                 label="Status"
@@ -1005,7 +813,7 @@ export const Projects: React.FC = () => {
                                 value={editProject.status}
                                 onChange={(e) => setEditProject({ ...editProject, status: e.target.value as any })}
                                 options={statusOptions}
-                                disabled={isLoading}
+                                disabled={isCreatingProject}
                             />
                         </div>
                     </div>
@@ -1017,28 +825,26 @@ export const Projects: React.FC = () => {
                             setIsEditModalOpen(false)
                             setEditProject({
                                 name: '',
-                                type: '',
                                 description: '',
-                                status: 'active',
+                                projectTypeId: '',
+                                assignedAgentId: '',
                                 customerId: '',
-                                customerName: '',
-                                agentId: '',
-                                agentName: '',
+                                status: 'PENDING',
                                 dueDate: ''
                             })
                             setEditErrors({})
                             setEditingProject(null)
                         }}
-                        disabled={isLoading}
+                        disabled={isUpdatingProject}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleUpdate}
-                        disabled={isLoading}
+                        disabled={isUpdatingProject}
                     >
-                        {isLoading ? (
+                        {isUpdatingProject ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
