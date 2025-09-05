@@ -1,26 +1,47 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, DataTable, Modal, ModalBody, ModalFooter, Input, StatusBadge } from '../../../components'
+import { Button, DataTable, Modal, ModalBody, ModalFooter, Input } from '../../../components'
 import { useProjectTypes } from '../../../hooks/useProjectTypes'
-import type { ProjectType, CreateProjectTypeRequest } from '../../../types/api'
+import type { ProjectType, CreateProjectTypeRequest, UpdateProjectTypeRequest } from '../../../types/api'
 
 export const ProjectTypes: React.FC = () => {
     const navigate = useNavigate()
-    const { projectTypes, loading, error, createProjectType, getProjectTypes, clearError } = useProjectTypes()
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize] = useState(10)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-    const [isCreating, setIsCreating] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [editingProjectType, setEditingProjectType] = useState<ProjectType | null>(null)
+
+    const {
+        projectTypes,
+        loading,
+        error,
+        total,
+        totalPages,
+        createProjectType,
+        updateProjectType,
+        deleteProjectType,
+        isCreating,
+        isUpdating,
+        isDeleting
+    } = useProjectTypes({ page: currentPage, pageSize })
 
     const [newProjectType, setNewProjectType] = useState<CreateProjectTypeRequest>({
         name: '',
         description: ''
     })
 
-    const [errors, setErrors] = useState<{ [key: string]: string }>({})
+    const [editProjectType, setEditProjectType] = useState<UpdateProjectTypeRequest>({
+        name: '',
+        description: ''
+    })
 
-    // Load project types on component mount
-    useEffect(() => {
-        getProjectTypes()
-    }, [getProjectTypes])
+    const [errors, setErrors] = useState<{ [key: string]: string }>({})
+    const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({})
+
+    const clearError = () => {
+        // Error is managed by React Query, no need for manual clearing
+    }
 
     const columns = [
         {
@@ -35,31 +56,24 @@ export const ProjectTypes: React.FC = () => {
             )
         },
         {
-            key: 'status' as keyof ProjectType,
-            title: 'Status',
-            render: (value: string) => (
-                <StatusBadge status={value === 'active' ? 'success' : 'warning'}>
-                    {value === 'active' ? 'Active' : 'Inactive'}
-                </StatusBadge>
-            )
-        },
-        {
-            key: 'projectCount' as keyof ProjectType,
-            title: 'Projects',
-            render: (value: number) => (
-                <span className="text-sm font-medium text-secondary-900">{value}</span>
-            )
-        },
-        {
-            key: 'reportCount' as keyof ProjectType,
+            key: 'reports' as keyof ProjectType,
             title: 'Reports',
-            render: (value: number) => (
-                <span className="text-sm font-medium text-secondary-900">{value}</span>
+            render: (value: any[] | undefined) => (
+                <span className="text-sm font-medium text-secondary-900">{value?.length || 0}</span>
             )
         },
         {
             key: 'createdAt' as keyof ProjectType,
             title: 'Created',
+            render: (value: string) => (
+                <span className="text-sm text-secondary-600">
+                    {new Date(value).toLocaleDateString()}
+                </span>
+            )
+        },
+        {
+            key: 'updatedAt' as keyof ProjectType,
+            title: 'Updated',
             render: (value: string) => (
                 <span className="text-sm text-secondary-600">
                     {new Date(value).toLocaleDateString()}
@@ -121,9 +135,6 @@ export const ProjectTypes: React.FC = () => {
             return
         }
 
-        setIsCreating(true)
-        clearError()
-
         try {
             const result = await createProjectType(newProjectType)
 
@@ -138,8 +149,41 @@ export const ProjectTypes: React.FC = () => {
             }
         } catch (err) {
             console.error('Unexpected error:', err)
-        } finally {
-            setIsCreating(false)
+        }
+    }
+
+    const handleUpdate = async () => {
+        if (!editingProjectType) return
+
+        // Validate form
+        const newErrors: { [key: string]: string } = {}
+        if (!editProjectType.name.trim()) {
+            newErrors.name = 'Name is required'
+        }
+        if (!editProjectType.description.trim()) {
+            newErrors.description = 'Description is required'
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setEditErrors(newErrors)
+            return
+        }
+
+        try {
+            const result = await updateProjectType(editingProjectType.id, editProjectType)
+
+            if (result) {
+                // Success - reset form and close modal
+                setEditProjectType({ name: '', description: '' })
+                setEditErrors({})
+                setEditingProjectType(null)
+                setIsEditModalOpen(false)
+            } else {
+                // Error is already set in the hook
+                console.error('Failed to update project type')
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err)
         }
     }
 
@@ -148,19 +192,42 @@ export const ProjectTypes: React.FC = () => {
     }
 
     const handleEdit = (projectType: ProjectType) => {
-        // TODO: Implement edit functionality
-        console.log('Edit project type:', projectType)
+        setEditingProjectType(projectType)
+        setEditProjectType({
+            name: projectType.name,
+            description: projectType.description
+        })
+        setEditErrors({})
+        setIsEditModalOpen(true)
     }
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this project type?')) {
-            // TODO: Implement delete functionality with API
-            console.log('Delete project type:', id)
+            const success = await deleteProjectType(id)
+            if (!success) {
+                console.error('Failed to delete project type')
+            }
         }
     }
 
     const handleRowClick = (item: ProjectType) => {
         console.log('Row clicked:', item)
+    }
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
+
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1)
+        }
+    }
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1)
+        }
     }
 
     return (
@@ -224,6 +291,98 @@ export const ProjectTypes: React.FC = () => {
                 onRowClick={handleRowClick}
                 emptyMessage="No project types found. Click 'Add Project Type' to create your first one."
             />
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-secondary-200 bg-white px-4 py-3 sm:px-6">
+                    <div className="flex flex-1 justify-between sm:hidden">
+                        <Button
+                            variant="secondary"
+                            onClick={handlePreviousPage}
+                            disabled={currentPage === 1 || loading}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages || loading}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm text-secondary-700">
+                                Showing{' '}
+                                <span className="font-medium">
+                                    {Math.min((currentPage - 1) * pageSize + 1, total)}
+                                </span>{' '}
+                                to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * pageSize, total)}
+                                </span>{' '}
+                                of{' '}
+                                <span className="font-medium">{total}</span>{' '}
+                                results
+                            </p>
+                        </div>
+                        <div>
+                            <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                <Button
+                                    variant="secondary"
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1 || loading}
+                                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-secondary-400 ring-1 ring-inset ring-secondary-300 hover:bg-secondary-50 focus:z-20 focus:outline-offset-0"
+                                >
+                                    <span className="sr-only">Previous</span>
+                                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                                    </svg>
+                                </Button>
+
+                                {/* Page Numbers */}
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+
+                                    return (
+                                        <Button
+                                            key={pageNum}
+                                            variant={currentPage === pageNum ? "primary" : "secondary"}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            disabled={loading}
+                                            className="relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-secondary-300 hover:bg-secondary-50 focus:z-20 focus:outline-offset-0"
+                                        >
+                                            {pageNum}
+                                        </Button>
+                                    );
+                                })}
+
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages || loading}
+                                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-secondary-400 ring-1 ring-inset ring-secondary-300 hover:bg-secondary-50 focus:z-20 focus:outline-offset-0"
+                                >
+                                    <span className="sr-only">Next</span>
+                                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                    </svg>
+                                </Button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Project Type Modal */}
             <Modal
@@ -292,6 +451,80 @@ export const ProjectTypes: React.FC = () => {
                             </>
                         ) : (
                             'Add Project Type'
+                        )}
+                    </Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* Edit Project Type Modal */}
+            <Modal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false)
+                    setEditProjectType({ name: '', description: '' })
+                    setEditErrors({})
+                    setEditingProjectType(null)
+                    clearError()
+                }}
+                title="Edit Project Type"
+                size="md"
+            >
+                <ModalBody>
+                    <div className="space-y-4">
+                        <Input
+                            label="Name"
+                            placeholder="Enter project type name"
+                            value={editProjectType.name}
+                            onChange={(e) => setEditProjectType({ ...editProjectType, name: e.target.value })}
+                            error={editErrors.name}
+                            required
+                            disabled={isUpdating}
+                        />
+                        <div>
+                            <label className="form-label">Description</label>
+                            <textarea
+                                className="w-full px-3 py-2 text-sm border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-secondary-50 disabled:cursor-not-allowed"
+                                placeholder="Enter project type description"
+                                value={editProjectType.description}
+                                onChange={(e) => setEditProjectType({ ...editProjectType, description: e.target.value })}
+                                rows={3}
+                                disabled={isUpdating}
+                            />
+                            {editErrors.description && (
+                                <p className="mt-1 text-sm text-error-600">{editErrors.description}</p>
+                            )}
+                        </div>
+                    </div>
+                </ModalBody>
+                <ModalFooter>
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            setIsEditModalOpen(false)
+                            setEditProjectType({ name: '', description: '' })
+                            setEditErrors({})
+                            setEditingProjectType(null)
+                            clearError()
+                        }}
+                        disabled={isUpdating}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleUpdate}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Updating...
+                            </>
+                        ) : (
+                            'Update Project Type'
                         )}
                     </Button>
                 </ModalFooter>

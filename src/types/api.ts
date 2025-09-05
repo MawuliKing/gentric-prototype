@@ -53,13 +53,17 @@ export interface ProjectType {
     id: string;
     name: string;
     description: string;
-    status: 'active' | 'inactive';
     createdAt: string;
-    projectCount?: number;
-    reportCount?: number;
+    updatedAt: string;
+    reports?: any[]; // Array of reports associated with this project type
 }
 
 export interface CreateProjectTypeRequest {
+    name: string;
+    description: string;
+}
+
+export interface UpdateProjectTypeRequest {
     name: string;
     description: string;
 }
