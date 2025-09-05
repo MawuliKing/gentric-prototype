@@ -1,150 +1,68 @@
 import React, { useState } from 'react'
 import { Button, DataTable, Input, Modal, ModalBody, ModalFooter, Select, StatusBadge } from '../../../components'
+import { useAgents } from '../../../hooks/useAgents'
+import type { Agent, CreateAgentRequest } from '../../../types/api'
 
-// Mock agent data structure for UI demonstration
-interface Agent {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    status: 'active' | 'inactive' | 'pending'
-    lastLogin: string
-    createdAt: string
-    updatedAt: string
-    assignedProjects: number
-    performance: {
-        rating: number
-        completedTasks: number
-        totalTasks: number
-    }
-}
-
-// Mock data for demonstration
-const mockAgents: Agent[] = [
-    {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@company.com',
-        phone: '+1 (555) 123-4567',
-        status: 'active',
-        lastLogin: '2024-01-15T10:30:00Z',
-        createdAt: '2023-06-15T09:00:00Z',
-        updatedAt: '2024-01-15T10:30:00Z',
-        assignedProjects: 12,
-        performance: {
-            rating: 4.8,
-            completedTasks: 45,
-            totalTasks: 50
-        }
-    },
-    {
-        id: '2',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@company.com',
-        phone: '+1 (555) 234-5678',
-        status: 'active',
-        lastLogin: '2024-01-14T16:45:00Z',
-        createdAt: '2023-08-20T14:30:00Z',
-        updatedAt: '2024-01-14T16:45:00Z',
-        assignedProjects: 8,
-        performance: {
-            rating: 4.6,
-            completedTasks: 38,
-            totalTasks: 42
-        }
-    },
-    {
-        id: '3',
-        firstName: 'Mike',
-        lastName: 'Johnson',
-        email: 'mike.johnson@company.com',
-        phone: '+1 (555) 345-6789',
-        status: 'pending',
-        lastLogin: '2024-01-10T11:20:00Z',
-        createdAt: '2024-01-01T08:00:00Z',
-        updatedAt: '2024-01-10T11:20:00Z',
-        assignedProjects: 3,
-        performance: {
-            rating: 4.2,
-            completedTasks: 15,
-            totalTasks: 20
-        }
-    },
-    {
-        id: '4',
-        firstName: 'Sarah',
-        lastName: 'Wilson',
-        email: 'sarah.wilson@company.com',
-        phone: '+1 (555) 456-7890',
-        status: 'active',
-        lastLogin: '2024-01-15T09:15:00Z',
-        createdAt: '2023-03-10T10:15:00Z',
-        updatedAt: '2024-01-15T09:15:00Z',
-        assignedProjects: 15,
-        performance: {
-            rating: 4.9,
-            completedTasks: 67,
-            totalTasks: 70
-        }
-    },
-    {
-        id: '5',
-        firstName: 'David',
-        lastName: 'Brown',
-        email: 'david.brown@company.com',
-        phone: '+1 (555) 567-8901',
-        status: 'inactive',
-        lastLogin: '2023-12-20T14:30:00Z',
-        createdAt: '2023-05-15T11:45:00Z',
-        updatedAt: '2023-12-20T14:30:00Z',
-        assignedProjects: 0,
-        performance: {
-            rating: 3.8,
-            completedTasks: 28,
-            totalTasks: 35
-        }
-    }
-]
 
 const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'pending', label: 'Pending' }
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'INACTIVE', label: 'Inactive' },
+    { value: 'PENDING', label: 'Pending' }
 ]
 
 export const Agents: React.FC = () => {
-    const [agents, setAgents] = useState<Agent[]>(mockAgents)
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize] = useState(10)
 
-    const [newAgent, setNewAgent] = useState({
+    // Use the agents hook for backend integration
+    const {
+        agents,
+        loading,
+        error,
+        total,
+        totalPages,
+        createAgent,
+        isCreating,
+        createError
+    } = useAgents({ page: currentPage, pageSize })
+
+    const [newAgent, setNewAgent] = useState<CreateAgentRequest>({
         firstName: '',
         lastName: '',
+        otherName: '',
         email: '',
-        phone: '',
-        status: 'pending' as const
+        phoneNumber: ''
     })
 
     const [editAgent, setEditAgent] = useState({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        status: 'active' as 'active' | 'inactive' | 'pending'
+        phoneNumber: '',
+        status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'PENDING'
     })
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({})
     const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({})
 
+    // Add hardcoded performance data to agents
+    const agentsWithPerformance = agents.map(agent => ({
+        ...agent,
+        assignedProjects: Math.floor(Math.random() * 20), // Random 0-19 projects
+        performance: {
+            rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Random 3.0-5.0 rating
+            completedTasks: Math.floor(Math.random() * 100),
+            totalTasks: Math.floor(Math.random() * 100) + 50
+        }
+    }))
+
     // Filter agents based on search and filters
-    const filteredAgents = agents.filter(agent => {
+    const filteredAgents = agentsWithPerformance.filter(agent => {
         const matchesSearch = searchTerm === '' ||
             agent.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             agent.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,9 +98,9 @@ export const Agents: React.FC = () => {
             title: 'Status',
             render: (value: string) => (
                 <StatusBadge
-                    status={value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}
+                    status={value === 'ACTIVE' ? 'success' : value === 'PENDING' ? 'warning' : 'error'}
                 >
-                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                    {value === 'ACTIVE' ? 'Active' : value === 'PENDING' ? 'Pending' : 'Inactive'}
                 </StatusBadge>
             )
         },
@@ -196,23 +114,23 @@ export const Agents: React.FC = () => {
         {
             key: 'performance' as keyof Agent,
             title: 'Performance',
-            render: (value: Agent['performance']) => (
+            render: () => (
                 <div className="text-sm">
                     <div className="font-medium text-secondary-900">
-                        ⭐ {value.rating}/5.0
+                        ⭐ 5/5.0
                     </div>
                     <div className="text-secondary-500">
-                        {value.completedTasks}/{value.totalTasks} tasks
+                        0/0
                     </div>
                 </div>
             )
         },
         {
-            key: 'lastLogin' as keyof Agent,
+            key: 'lastLoginAt' as keyof Agent,
             title: 'Last Login',
-            render: (value: string) => (
+            render: (value: string | null) => (
                 <span className="text-sm text-secondary-600">
-                    {new Date(value).toLocaleDateString()}
+                    {value ? new Date(value).toLocaleDateString() : 'Never'}
                 </span>
             )
         },
@@ -232,14 +150,14 @@ export const Agents: React.FC = () => {
                         Edit
                     </Button>
                     <Button
-                        variant={agent.status === 'active' ? 'error' : 'primary'}
+                        variant={agent.status === 'ACTIVE' ? 'error' : 'primary'}
                         size="sm"
                         onClick={(e) => {
                             e.stopPropagation()
                             handleToggleStatus(agent)
                         }}
                     >
-                        {agent.status === 'active' ? 'Deactivate' : 'Activate'}
+                        {agent.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                     </Button>
                 </div>
             )
@@ -260,8 +178,8 @@ export const Agents: React.FC = () => {
         } else if (!/\S+@\S+\.\S+/.test(newAgent.email)) {
             newErrors.email = 'Email is invalid'
         }
-        if (!newAgent.phone.trim()) {
-            newErrors.phone = 'Phone is required'
+        if (!newAgent.phoneNumber.trim()) {
+            newErrors.phoneNumber = 'Phone number is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -269,36 +187,27 @@ export const Agents: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
+        try {
+            const result = await createAgent(newAgent)
 
-        // Simulate API call
-        setTimeout(() => {
-            const newAgentData: Agent = {
-                id: Date.now().toString(),
-                ...newAgent,
-                lastLogin: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                assignedProjects: 0,
-                performance: {
-                    rating: 0,
-                    completedTasks: 0,
-                    totalTasks: 0
-                }
+            if (result) {
+                // Success - reset form and close modal
+                setNewAgent({
+                    firstName: '',
+                    lastName: '',
+                    otherName: '',
+                    email: '',
+                    phoneNumber: ''
+                })
+                setErrors({})
+                setIsAddModalOpen(false)
+            } else {
+                // Error is already set in the hook
+                console.error('Failed to create agent')
             }
-
-            setAgents([...agents, newAgentData])
-            setNewAgent({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                status: 'pending'
-            })
-            setErrors({})
-            setIsAddModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        } catch (err) {
+            console.error('Unexpected error:', err)
+        }
     }
 
     const handleUpdate = async () => {
@@ -317,8 +226,8 @@ export const Agents: React.FC = () => {
         } else if (!/\S+@\S+\.\S+/.test(editAgent.email)) {
             newErrors.email = 'Email is invalid'
         }
-        if (!editAgent.phone.trim()) {
-            newErrors.phone = 'Phone is required'
+        if (!editAgent.phoneNumber.trim()) {
+            newErrors.phoneNumber = 'Phone number is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -326,28 +235,8 @@ export const Agents: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setAgents(agents.map(agent =>
-                agent.id === editingAgent.id
-                    ? { ...agent, ...editAgent, updatedAt: new Date().toISOString() }
-                    : agent
-            ))
-
-            setEditAgent({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                status: 'active'
-            })
-            setEditErrors({})
-            setEditingAgent(null)
-            setIsEditModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        // TODO: Implement update functionality
+        console.log('Update agent:', editAgent)
     }
 
     const handleEdit = (agent: Agent) => {
@@ -356,7 +245,7 @@ export const Agents: React.FC = () => {
             firstName: agent.firstName,
             lastName: agent.lastName,
             email: agent.email,
-            phone: agent.phone,
+            phoneNumber: agent.phoneNumber,
             status: agent.status
         })
         setEditErrors({})
@@ -364,23 +253,16 @@ export const Agents: React.FC = () => {
     }
 
     const handleToggleStatus = async (agent: Agent) => {
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setAgents(agents.map(a =>
-                a.id === agent.id
-                    ? { ...a, status: a.status === 'active' ? 'inactive' : 'active', updatedAt: new Date().toISOString() }
-                    : a
-            ))
-            setIsLoading(false)
-        }, 500)
+        // TODO: Implement toggle status functionality
+        console.log('Toggle status for agent:', agent.id)
     }
 
     const clearFilters = () => {
         setSearchTerm('')
         setStatusFilter('')
     }
+
+    const isLoading = isCreating;
 
     return (
         <div className="space-y-6">
@@ -395,7 +277,7 @@ export const Agents: React.FC = () => {
                 <Button
                     variant="primary"
                     onClick={() => setIsAddModalOpen(true)}
-                    disabled={isLoading}
+                    disabled={isCreating}
                 >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -403,6 +285,47 @@ export const Agents: React.FC = () => {
                     Add Agent
                 </Button>
             </div>
+
+            {/* Error Display */}
+            {error && (
+                <div className="bg-error-50 border border-error-200 rounded-md p-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-error-800">
+                                Error Loading Agents
+                            </h3>
+                            <div className="mt-2 text-sm text-error-700">
+                                {error}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {createError && (
+                <div className="bg-error-50 border border-error-200 rounded-md p-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-error-800">
+                                Error Creating Agent
+                            </h3>
+                            <div className="mt-2 text-sm text-error-700">
+                                {createError}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white p-6 rounded-lg border border-secondary-200 shadow-soft">
@@ -451,7 +374,7 @@ export const Agents: React.FC = () => {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Total Agents</p>
-                            <p className="text-2xl font-semibold text-secondary-900">{agents.length}</p>
+                            <p className="text-2xl font-semibold text-secondary-900">{total}</p>
                         </div>
                     </div>
                 </div>
@@ -468,7 +391,7 @@ export const Agents: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Active Agents</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {agents.filter(a => a.status === 'active').length}
+                                {agentsWithPerformance.filter(a => a.status === 'ACTIVE').length}
                             </p>
                         </div>
                     </div>
@@ -486,7 +409,7 @@ export const Agents: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Pending Agents</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {agents.filter(a => a.status === 'pending').length}
+                                {agentsWithPerformance.filter(a => a.status === 'PENDING').length}
                             </p>
                         </div>
                     </div>
@@ -504,7 +427,7 @@ export const Agents: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Total Projects</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {agents.reduce((sum, agent) => sum + agent.assignedProjects, 0)}
+                                {agentsWithPerformance.reduce((sum, agent) => sum + (agent.assignedProjects || 0), 0)}
                             </p>
                         </div>
                     </div>
@@ -515,9 +438,76 @@ export const Agents: React.FC = () => {
             <DataTable
                 data={filteredAgents}
                 columns={columns}
-                loading={isLoading}
+                loading={loading}
                 emptyMessage="No agents found. Click 'Add Agent' to create your first agent."
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-secondary-200 sm:px-6">
+                    <div className="flex-1 flex justify-between sm:hidden">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm text-secondary-700">
+                                Showing{' '}
+                                <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                                {' '}to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * pageSize, total)}
+                                </span>
+                                {' '}of{' '}
+                                <span className="font-medium">{total}</span>
+                                {' '}results
+                            </p>
+                        </div>
+                        <div>
+                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50"
+                                >
+                                    Previous
+                                </Button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <Button
+                                        key={page}
+                                        variant={page === currentPage ? "primary" : "secondary"}
+                                        onClick={() => setCurrentPage(page)}
+                                        className="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                                    >
+                                        {page}
+                                    </Button>
+                                ))}
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50"
+                                >
+                                    Next
+                                </Button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Agent Modal */}
             <Modal
@@ -528,8 +518,8 @@ export const Agents: React.FC = () => {
                         firstName: '',
                         lastName: '',
                         email: '',
-                        phone: '',
-                        status: 'pending'
+                        phoneNumber: '',
+                        otherName: ''
                     })
                     setErrors({})
                 }}
@@ -545,7 +535,7 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setNewAgent({ ...newAgent, firstName: e.target.value })}
                             error={errors.firstName}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                         <Input
                             label="Last Name"
@@ -554,7 +544,15 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setNewAgent({ ...newAgent, lastName: e.target.value })}
                             error={errors.lastName}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
+                        />
+                        <Input
+                            label="Other Name (Optional)"
+                            placeholder="Enter other name"
+                            value={newAgent.otherName || ''}
+                            onChange={(e) => setNewAgent({ ...newAgent, otherName: e.target.value })}
+                            error={errors.otherName}
+                            disabled={isCreating}
                         />
                         <Input
                             label="Email"
@@ -564,16 +562,16 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
                             error={errors.email}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                         <Input
-                            label="Phone"
+                            label="Phone Number"
                             placeholder="Enter phone number"
-                            value={newAgent.phone}
-                            onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })}
-                            error={errors.phone}
+                            value={newAgent.phoneNumber}
+                            onChange={(e) => setNewAgent({ ...newAgent, phoneNumber: e.target.value })}
+                            error={errors.phoneNumber}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                     </div>
                 </ModalBody>
@@ -585,22 +583,22 @@ export const Agents: React.FC = () => {
                             setNewAgent({
                                 firstName: '',
                                 lastName: '',
+                                otherName: '',
                                 email: '',
-                                phone: '',
-                                status: 'pending'
+                                phoneNumber: ''
                             })
                             setErrors({})
                         }}
-                        disabled={isLoading}
+                        disabled={isCreating}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleAdd}
-                        disabled={isLoading}
+                        disabled={isCreating}
                     >
-                        {isLoading ? (
+                        {isCreating ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -624,8 +622,8 @@ export const Agents: React.FC = () => {
                         firstName: '',
                         lastName: '',
                         email: '',
-                        phone: '',
-                        status: 'active'
+                        phoneNumber: '',
+                        status: 'ACTIVE'
                     })
                     setEditErrors({})
                     setEditingAgent(null)
@@ -642,7 +640,7 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setEditAgent({ ...editAgent, firstName: e.target.value })}
                             error={editErrors.firstName}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
                             label="Last Name"
@@ -651,7 +649,7 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setEditAgent({ ...editAgent, lastName: e.target.value })}
                             error={editErrors.lastName}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
                             label="Email"
@@ -661,16 +659,16 @@ export const Agents: React.FC = () => {
                             onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })}
                             error={editErrors.email}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
                             label="Phone"
                             placeholder="Enter phone number"
-                            value={editAgent.phone}
-                            onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })}
-                            error={editErrors.phone}
+                            value={editAgent.phoneNumber}
+                            onChange={(e) => setEditAgent({ ...editAgent, phoneNumber: e.target.value })}
+                            error={editErrors.phoneNumber}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <div className="md:col-span-2">
                             <Select
@@ -679,7 +677,7 @@ export const Agents: React.FC = () => {
                                 value={editAgent.status}
                                 onChange={(e) => setEditAgent({ ...editAgent, status: e.target.value as any })}
                                 options={statusOptions}
-                                disabled={isLoading}
+                                disabled={false}
                             />
                         </div>
                     </div>
@@ -693,20 +691,20 @@ export const Agents: React.FC = () => {
                                 firstName: '',
                                 lastName: '',
                                 email: '',
-                                phone: '',
-                                status: 'active'
+                                phoneNumber: '',
+                                status: 'ACTIVE'
                             })
                             setEditErrors({})
                             setEditingAgent(null)
                         }}
-                        disabled={isLoading}
+                        disabled={false}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleUpdate}
-                        disabled={isLoading}
+                        disabled={false}
                     >
                         {isLoading ? (
                             <>

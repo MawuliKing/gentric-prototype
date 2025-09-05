@@ -129,3 +129,76 @@ export interface ReportTemplatesResponse {
     total: number;
     totalPages: number;
 }
+
+// Agents
+export interface Agent {
+    id: string;
+    firstName: string;
+    lastName: string;
+    otherName?: string;
+    email: string;
+    phoneNumber: string;
+    fullName: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+    type: 'AGENT';
+    passwordResetToken?: string | null;
+    passwordResetExpires?: string | null;
+    lastLoginAt?: string | null;
+    isEmailVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+    assignedProjects?: number;
+    performance?: {
+        rating: number;
+        completedTasks: number;
+        totalTasks: number;
+    };
+}
+
+export interface CreateAgentRequest {
+    firstName: string;
+    lastName: string;
+    otherName?: string;
+    email: string;
+    phoneNumber: string;
+}
+
+export interface AgentsResponse {
+    agents: Agent[];
+    total: number;
+    totalPages: number;
+}
+
+// Customers
+export interface Customer {
+    id: string;
+    firstName: string;
+    lastName: string;
+    otherName?: string;
+    email: string;
+    phoneNumber: string;
+    fullName: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+    type: 'CUSTOMER';
+    passwordResetToken?: string | null;
+    passwordResetExpires?: string | null;
+    lastLoginAt?: string | null;
+    isEmailVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+    assignedProjects?: number;
+}
+
+export interface CreateCustomerRequest {
+    firstName: string;
+    lastName: string;
+    otherName?: string;
+    email: string;
+    phoneNumber: string;
+}
+
+export interface CustomersResponse {
+    customers: Customer[];
+    total: number;
+    totalPages: number;
+}

@@ -1,120 +1,62 @@
 import React, { useState } from 'react'
 import { Button, DataTable, Input, Modal, ModalBody, ModalFooter, Select, StatusBadge } from '../../../components'
-
-// Mock customer data structure for UI demonstration
-interface Customer {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-    status: 'active' | 'inactive' | 'pending'
-    lastLogin: string
-    createdAt: string
-    updatedAt: string
-    assignedProjects: number
-}
-
-// Mock data for demonstration
-const mockCustomers: Customer[] = [
-    {
-        id: '1',
-        firstName: 'Alice',
-        lastName: 'Johnson',
-        email: 'alice.johnson@company.com',
-        phone: '+1 (555) 123-4567',
-        status: 'active',
-        lastLogin: '2024-01-15T10:30:00Z',
-        createdAt: '2023-06-15T09:00:00Z',
-        updatedAt: '2024-01-15T10:30:00Z',
-        assignedProjects: 5
-    },
-    {
-        id: '2',
-        firstName: 'Bob',
-        lastName: 'Smith',
-        email: 'bob.smith@company.com',
-        phone: '+1 (555) 234-5678',
-        status: 'active',
-        lastLogin: '2024-01-14T16:45:00Z',
-        createdAt: '2023-08-20T14:30:00Z',
-        updatedAt: '2024-01-14T16:45:00Z',
-        assignedProjects: 3
-    },
-    {
-        id: '3',
-        firstName: 'Carol',
-        lastName: 'Williams',
-        email: 'carol.williams@company.com',
-        phone: '+1 (555) 345-6789',
-        status: 'pending',
-        lastLogin: '2024-01-10T11:20:00Z',
-        createdAt: '2024-01-01T08:00:00Z',
-        updatedAt: '2024-01-10T11:20:00Z',
-        assignedProjects: 1
-    },
-    {
-        id: '4',
-        firstName: 'David',
-        lastName: 'Brown',
-        email: 'david.brown@company.com',
-        phone: '+1 (555) 456-7890',
-        status: 'active',
-        lastLogin: '2024-01-15T09:15:00Z',
-        createdAt: '2023-03-10T10:15:00Z',
-        updatedAt: '2024-01-15T09:15:00Z',
-        assignedProjects: 8
-    },
-    {
-        id: '5',
-        firstName: 'Eva',
-        lastName: 'Davis',
-        email: 'eva.davis@company.com',
-        phone: '+1 (555) 567-8901',
-        status: 'inactive',
-        lastLogin: '2023-12-20T14:30:00Z',
-        createdAt: '2023-05-15T11:45:00Z',
-        updatedAt: '2023-12-20T14:30:00Z',
-        assignedProjects: 0
-    }
-]
+import { useCustomers } from '../../../hooks/useCustomers'
+import type { Customer, CreateCustomerRequest } from '../../../types/api'
 
 const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'pending', label: 'Pending' }
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'INACTIVE', label: 'Inactive' },
+    { value: 'PENDING', label: 'Pending' }
 ]
 
 export const Customers: React.FC = () => {
-    const [customers, setCustomers] = useState<Customer[]>(mockCustomers)
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize] = useState(10)
 
-    const [newCustomer, setNewCustomer] = useState({
+    // Use the customers hook for backend integration
+    const {
+        customers,
+        loading,
+        error,
+        total,
+        totalPages,
+        createCustomer,
+        isCreating,
+        createError
+    } = useCustomers({ page: currentPage, pageSize })
+
+    const [newCustomer, setNewCustomer] = useState<CreateCustomerRequest>({
         firstName: '',
         lastName: '',
+        otherName: '',
         email: '',
-        phone: '',
-        status: 'pending' as const
+        phoneNumber: ''
     })
 
     const [editCustomer, setEditCustomer] = useState({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        status: 'active' as 'active' | 'inactive' | 'pending'
+        phoneNumber: '',
+        status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'PENDING'
     })
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({})
     const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({})
 
+    // Add hardcoded assignedProjects data to customers
+    const customersWithProjects = customers.map(customer => ({
+        ...customer,
+        assignedProjects: Math.floor(Math.random() * 15) // Random 0-14 projects
+    }))
+
     // Filter customers based on search and filters
-    const filteredCustomers = customers.filter(customer => {
+    const filteredCustomers = customersWithProjects.filter(customer => {
         const matchesSearch = searchTerm === '' ||
             customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             customer.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,9 +92,9 @@ export const Customers: React.FC = () => {
             title: 'Status',
             render: (value: string) => (
                 <StatusBadge
-                    status={value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}
+                    status={value === 'ACTIVE' ? 'success' : value === 'PENDING' ? 'warning' : 'error'}
                 >
-                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                    {value === 'ACTIVE' ? 'Active' : value === 'PENDING' ? 'Pending' : 'Inactive'}
                 </StatusBadge>
             )
         },
@@ -164,11 +106,11 @@ export const Customers: React.FC = () => {
             )
         },
         {
-            key: 'lastLogin' as keyof Customer,
+            key: 'lastLoginAt' as keyof Customer,
             title: 'Last Login',
-            render: (value: string) => (
+            render: (value: string | null) => (
                 <span className="text-sm text-secondary-600">
-                    {new Date(value).toLocaleDateString()}
+                    {value ? new Date(value).toLocaleDateString() : 'Never'}
                 </span>
             )
         },
@@ -188,14 +130,14 @@ export const Customers: React.FC = () => {
                         Edit
                     </Button>
                     <Button
-                        variant={customer.status === 'active' ? 'error' : 'primary'}
+                        variant={customer.status === 'ACTIVE' ? 'error' : 'primary'}
                         size="sm"
                         onClick={(e) => {
                             e.stopPropagation()
                             handleToggleStatus(customer)
                         }}
                     >
-                        {customer.status === 'active' ? 'Deactivate' : 'Activate'}
+                        {customer.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                     </Button>
                 </div>
             )
@@ -216,8 +158,8 @@ export const Customers: React.FC = () => {
         } else if (!/\S+@\S+\.\S+/.test(newCustomer.email)) {
             newErrors.email = 'Email is invalid'
         }
-        if (!newCustomer.phone.trim()) {
-            newErrors.phone = 'Phone is required'
+        if (!newCustomer.phoneNumber.trim()) {
+            newErrors.phoneNumber = 'Phone number is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -225,31 +167,27 @@ export const Customers: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
+        try {
+            const result = await createCustomer(newCustomer)
 
-        // Simulate API call
-        setTimeout(() => {
-            const newCustomerData: Customer = {
-                id: Date.now().toString(),
-                ...newCustomer,
-                lastLogin: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                assignedProjects: 0
+            if (result) {
+                // Success - reset form and close modal
+                setNewCustomer({
+                    firstName: '',
+                    lastName: '',
+                    otherName: '',
+                    email: '',
+                    phoneNumber: ''
+                })
+                setErrors({})
+                setIsAddModalOpen(false)
+            } else {
+                // Error is already set in the hook
+                console.error('Failed to create customer')
             }
-
-            setCustomers([...customers, newCustomerData])
-            setNewCustomer({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                status: 'pending'
-            })
-            setErrors({})
-            setIsAddModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        } catch (err) {
+            console.error('Unexpected error:', err)
+        }
     }
 
     const handleUpdate = async () => {
@@ -268,8 +206,8 @@ export const Customers: React.FC = () => {
         } else if (!/\S+@\S+\.\S+/.test(editCustomer.email)) {
             newErrors.email = 'Email is invalid'
         }
-        if (!editCustomer.phone.trim()) {
-            newErrors.phone = 'Phone is required'
+        if (!editCustomer.phoneNumber.trim()) {
+            newErrors.phoneNumber = 'Phone number is required'
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -277,28 +215,8 @@ export const Customers: React.FC = () => {
             return
         }
 
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setCustomers(customers.map(customer =>
-                customer.id === editingCustomer.id
-                    ? { ...customer, ...editCustomer, updatedAt: new Date().toISOString() }
-                    : customer
-            ))
-
-            setEditCustomer({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                status: 'active'
-            })
-            setEditErrors({})
-            setEditingCustomer(null)
-            setIsEditModalOpen(false)
-            setIsLoading(false)
-        }, 1000)
+        // TODO: Implement update functionality
+        console.log('Update customer:', editCustomer)
     }
 
     const handleEdit = (customer: Customer) => {
@@ -307,7 +225,7 @@ export const Customers: React.FC = () => {
             firstName: customer.firstName,
             lastName: customer.lastName,
             email: customer.email,
-            phone: customer.phone,
+            phoneNumber: customer.phoneNumber,
             status: customer.status
         })
         setEditErrors({})
@@ -315,17 +233,8 @@ export const Customers: React.FC = () => {
     }
 
     const handleToggleStatus = async (customer: Customer) => {
-        setIsLoading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setCustomers(customers.map(c =>
-                c.id === customer.id
-                    ? { ...c, status: c.status === 'active' ? 'inactive' : 'active', updatedAt: new Date().toISOString() }
-                    : c
-            ))
-            setIsLoading(false)
-        }, 500)
+        // TODO: Implement toggle status functionality
+        console.log('Toggle status for customer:', customer.id)
     }
 
     const clearFilters = () => {
@@ -346,7 +255,7 @@ export const Customers: React.FC = () => {
                 <Button
                     variant="primary"
                     onClick={() => setIsAddModalOpen(true)}
-                    disabled={isLoading}
+                    disabled={isCreating}
                 >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -354,6 +263,47 @@ export const Customers: React.FC = () => {
                     Add Customer
                 </Button>
             </div>
+
+            {/* Error Display */}
+            {error && (
+                <div className="bg-error-50 border border-error-200 rounded-md p-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-error-800">
+                                Error Loading Customers
+                            </h3>
+                            <div className="mt-2 text-sm text-error-700">
+                                {error}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {createError && (
+                <div className="bg-error-50 border border-error-200 rounded-md p-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-error-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-error-800">
+                                Error Creating Customer
+                            </h3>
+                            <div className="mt-2 text-sm text-error-700">
+                                {createError}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white p-6 rounded-lg border border-secondary-200 shadow-soft">
@@ -402,7 +352,7 @@ export const Customers: React.FC = () => {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Total Customers</p>
-                            <p className="text-2xl font-semibold text-secondary-900">{customers.length}</p>
+                            <p className="text-2xl font-semibold text-secondary-900">{total}</p>
                         </div>
                     </div>
                 </div>
@@ -419,7 +369,7 @@ export const Customers: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Active Customers</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {customers.filter(c => c.status === 'active').length}
+                                {customersWithProjects.filter(c => c.status === 'ACTIVE').length}
                             </p>
                         </div>
                     </div>
@@ -437,7 +387,7 @@ export const Customers: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Pending Customers</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {customers.filter(c => c.status === 'pending').length}
+                                {customersWithProjects.filter(c => c.status === 'PENDING').length}
                             </p>
                         </div>
                     </div>
@@ -455,7 +405,7 @@ export const Customers: React.FC = () => {
                         <div className="ml-4">
                             <p className="text-sm font-medium text-secondary-600">Total Projects</p>
                             <p className="text-2xl font-semibold text-secondary-900">
-                                {customers.reduce((sum, customer) => sum + customer.assignedProjects, 0)}
+                                {customersWithProjects.reduce((sum, customer) => sum + (customer.assignedProjects || 0), 0)}
                             </p>
                         </div>
                     </div>
@@ -466,9 +416,76 @@ export const Customers: React.FC = () => {
             <DataTable
                 data={filteredCustomers}
                 columns={columns}
-                loading={isLoading}
+                loading={loading}
                 emptyMessage="No customers found. Click 'Add Customer' to create your first customer."
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-secondary-200 sm:px-6">
+                    <div className="flex-1 flex justify-between sm:hidden">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm text-secondary-700">
+                                Showing{' '}
+                                <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                                {' '}to{' '}
+                                <span className="font-medium">
+                                    {Math.min(currentPage * pageSize, total)}
+                                </span>
+                                {' '}of{' '}
+                                <span className="font-medium">{total}</span>
+                                {' '}results
+                            </p>
+                        </div>
+                        <div>
+                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50"
+                                >
+                                    Previous
+                                </Button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <Button
+                                        key={page}
+                                        variant={page === currentPage ? "primary" : "secondary"}
+                                        onClick={() => setCurrentPage(page)}
+                                        className="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                                    >
+                                        {page}
+                                    </Button>
+                                ))}
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-white text-sm font-medium text-secondary-500 hover:bg-secondary-50"
+                                >
+                                    Next
+                                </Button>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Customer Modal */}
             <Modal
@@ -478,9 +495,9 @@ export const Customers: React.FC = () => {
                     setNewCustomer({
                         firstName: '',
                         lastName: '',
+                        otherName: '',
                         email: '',
-                        phone: '',
-                        status: 'pending'
+                        phoneNumber: ''
                     })
                     setErrors({})
                 }}
@@ -496,7 +513,7 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
                             error={errors.firstName}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                         <Input
                             label="Last Name"
@@ -505,7 +522,15 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
                             error={errors.lastName}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
+                        />
+                        <Input
+                            label="Other Name (Optional)"
+                            placeholder="Enter other name"
+                            value={newCustomer.otherName || ''}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, otherName: e.target.value })}
+                            error={errors.otherName}
+                            disabled={isCreating}
                         />
                         <Input
                             label="Email"
@@ -515,16 +540,16 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
                             error={errors.email}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                         <Input
-                            label="Phone"
+                            label="Phone Number"
                             placeholder="Enter phone number"
-                            value={newCustomer.phone}
-                            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                            error={errors.phone}
+                            value={newCustomer.phoneNumber}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
+                            error={errors.phoneNumber}
                             required
-                            disabled={isLoading}
+                            disabled={isCreating}
                         />
                     </div>
                 </ModalBody>
@@ -536,22 +561,22 @@ export const Customers: React.FC = () => {
                             setNewCustomer({
                                 firstName: '',
                                 lastName: '',
+                                otherName: '',
                                 email: '',
-                                phone: '',
-                                status: 'pending'
+                                phoneNumber: ''
                             })
                             setErrors({})
                         }}
-                        disabled={isLoading}
+                        disabled={isCreating}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleAdd}
-                        disabled={isLoading}
+                        disabled={isCreating}
                     >
-                        {isLoading ? (
+                        {isCreating ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -575,8 +600,8 @@ export const Customers: React.FC = () => {
                         firstName: '',
                         lastName: '',
                         email: '',
-                        phone: '',
-                        status: 'active'
+                        phoneNumber: '',
+                        status: 'ACTIVE'
                     })
                     setEditErrors({})
                     setEditingCustomer(null)
@@ -593,7 +618,7 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setEditCustomer({ ...editCustomer, firstName: e.target.value })}
                             error={editErrors.firstName}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
                             label="Last Name"
@@ -602,7 +627,7 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setEditCustomer({ ...editCustomer, lastName: e.target.value })}
                             error={editErrors.lastName}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
                             label="Email"
@@ -612,16 +637,16 @@ export const Customers: React.FC = () => {
                             onChange={(e) => setEditCustomer({ ...editCustomer, email: e.target.value })}
                             error={editErrors.email}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <Input
-                            label="Phone"
+                            label="Phone Number"
                             placeholder="Enter phone number"
-                            value={editCustomer.phone}
-                            onChange={(e) => setEditCustomer({ ...editCustomer, phone: e.target.value })}
-                            error={editErrors.phone}
+                            value={editCustomer.phoneNumber}
+                            onChange={(e) => setEditCustomer({ ...editCustomer, phoneNumber: e.target.value })}
+                            error={editErrors.phoneNumber}
                             required
-                            disabled={isLoading}
+                            disabled={false}
                         />
                         <div className="md:col-span-2">
                             <Select
@@ -630,7 +655,7 @@ export const Customers: React.FC = () => {
                                 value={editCustomer.status}
                                 onChange={(e) => setEditCustomer({ ...editCustomer, status: e.target.value as any })}
                                 options={statusOptions}
-                                disabled={isLoading}
+                                disabled={false}
                             />
                         </div>
                     </div>
@@ -644,22 +669,22 @@ export const Customers: React.FC = () => {
                                 firstName: '',
                                 lastName: '',
                                 email: '',
-                                phone: '',
-                                status: 'active'
+                                phoneNumber: '',
+                                status: 'ACTIVE'
                             })
                             setEditErrors({})
                             setEditingCustomer(null)
                         }}
-                        disabled={isLoading}
+                        disabled={false}
                     >
                         Cancel
                     </Button>
                     <Button
                         variant="primary"
                         onClick={handleUpdate}
-                        disabled={isLoading}
+                        disabled={false}
                     >
-                        {isLoading ? (
+                        {false ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
