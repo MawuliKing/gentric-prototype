@@ -107,7 +107,10 @@ export interface FormField {
     | "checkbox"
     | "radio"
     | "date"
-    | "number";
+    | "number"
+    | "boolean"
+    | "dropdown"
+    | "image";
   label: string;
   required: boolean;
   options?: string[]; // For select, radio

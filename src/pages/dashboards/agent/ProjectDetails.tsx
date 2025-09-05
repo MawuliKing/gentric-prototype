@@ -1,8 +1,7 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Card, StatusBadge, Progress, Button, Tabs } from "../../../components";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button, Card, Progress, StatusBadge, Tabs } from "../../../components";
 import { useProjectDetails } from "../../../hooks/useProjectDetails";
-import type { Project } from "../../../types/api";
 
 // Mock submitted reports - in real app this would come from API
 const mockSubmittedReports = [
@@ -323,8 +322,9 @@ export const ProjectDetails: React.FC = () => {
                               variant="primary"
                               size="sm"
                               onClick={() => {
-                                // TODO: Navigate to report form
-                                console.log("Submit report:", report.id);
+                                navigate(
+                                  `/agent/projects/${projectId}/reports/${report.id}/submit`
+                                );
                               }}
                             >
                               <svg

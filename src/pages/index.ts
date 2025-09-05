@@ -10,6 +10,7 @@ export {
   AgentDashboard,
   AgentProjects,
   ProjectDetails,
+  ReportSubmission,
   Agents,
   Customers,
   Projects,
