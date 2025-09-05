@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, DataTable, Modal, ModalBody, ModalFooter, Input } from '../../../components'
+import { Button, DataTable, Input, Modal, ModalBody, ModalFooter } from '../../../components'
 import { useProjectTypes } from '../../../hooks/useProjectTypes'
-import type { ProjectType, CreateProjectTypeRequest, UpdateProjectTypeRequest } from '../../../types/api'
+import type { CreateProjectTypeRequest, ProjectType, UpdateProjectTypeRequest } from '../../../types/api'
 
 export const ProjectTypes: React.FC = () => {
     const navigate = useNavigate()
@@ -210,9 +210,6 @@ export const ProjectTypes: React.FC = () => {
         }
     }
 
-    const handleRowClick = (item: ProjectType) => {
-        console.log('Row clicked:', item)
-    }
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page)
@@ -288,7 +285,7 @@ export const ProjectTypes: React.FC = () => {
             <DataTable
                 data={projectTypes}
                 columns={columns}
-                onRowClick={handleRowClick}
+                onRowClick={handleView}
                 emptyMessage="No project types found. Click 'Add Project Type' to create your first one."
             />
 

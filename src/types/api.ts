@@ -73,3 +73,55 @@ export interface ProjectTypesResponse {
     total: number;
     totalPages: number;
 }
+
+// Report Templates
+export interface ReportTemplate {
+    id: string;
+    name: string;
+    description: string;
+    sections: ReportSection[];
+    createdAt: string;
+    updatedAt: string;
+    projectType: {
+        id: string;
+        name: string;
+        description: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+}
+
+export interface ReportSection {
+    id: string;
+    name: string;
+    fields: FormField[];
+    order: number;
+}
+
+export interface FormField {
+    id: string;
+    type: 'text' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'number';
+    label: string;
+    required: boolean;
+    options?: string[]; // For select, radio
+    placeholder?: string;
+    order: number;
+}
+
+export interface CreateReportTemplateRequest {
+    name: string;
+    description: string;
+    projectTypeId: string;
+    sections: any[]; // Will be handled separately
+}
+
+export interface UpdateReportTemplateRequest {
+    name: string;
+    description: string;
+}
+
+export interface ReportTemplatesResponse {
+    reportTemplates: ReportTemplate[];
+    total: number;
+    totalPages: number;
+}
