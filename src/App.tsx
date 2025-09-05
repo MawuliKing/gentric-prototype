@@ -4,7 +4,7 @@ import { ApiDemo, StorageDemo, Layout, AdminLayout, CustomerLayout, AgentLayout 
 import { ComponentShowcase } from './components/ComponentShowcase'
 import { AuthProvider } from './contexts/AuthContext'
 import { PrivateRoute } from './components/PrivateRoute'
-import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard, ProjectTypes, ProjectTypeDetails, FormBuilderPage, Agents, Customers, Projects } from './pages'
+import { Home, Login, Posts, Profile, AdminDashboard, CustomerDashboard, AgentDashboard, AgentProjects, ProjectDetails, ProjectTypes, ProjectTypeDetails, FormBuilderPage, Agents, Customers, Projects } from './pages'
 import { ACCOUNT_TYPE } from './types/api'
 
 
@@ -116,6 +116,20 @@ function App() {
         <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
           <AgentLayout>
             <AgentDashboard />
+          </AgentLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/agent/projects" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
+          <AgentLayout>
+            <AgentProjects />
+          </AgentLayout>
+        </PrivateRoute>
+      } />
+      <Route path="/agent/projects/:projectId" element={
+        <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
+          <AgentLayout>
+            <ProjectDetails />
           </AgentLayout>
         </PrivateRoute>
       } />
