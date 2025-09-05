@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Button, DataTable, Input, Modal, ModalBody, ModalFooter, Select, StatusBadge, Progress } from '../../../components'
 import { useCustomers } from '../../../hooks/useCustomers'
 import { useAgents } from '../../../hooks/useAgents'
-import type { Customer, Agent, CreateCustomerRequest, CreateAgentRequest } from '../../../types/api'
+import type { CreateCustomerRequest, CreateAgentRequest } from '../../../types/api'
 
 // Mock project data structure for UI demonstration
 interface Project {

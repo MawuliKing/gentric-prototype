@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Card, StatusBadge } from './';
 import { apiService } from '../services/apiService';
-import { StructuredResponse } from '../types/api';
+import type { StructuredResponse } from '../types/api';
 
 export const ApiDemo: React.FC = () => {
     const [response, setResponse] = useState<StructuredResponse | null>(null);
