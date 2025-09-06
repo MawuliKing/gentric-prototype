@@ -21,6 +21,7 @@ import {
   AgentProjects,
   ProjectDetails,
   ReportSubmission,
+  ReportView,
   ProjectTypes,
   ProjectTypeDetails,
   FormBuilderPage,
@@ -214,6 +215,16 @@ function App() {
           <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
             <AgentLayout>
               <ReportSubmission />
+            </AgentLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/agent/projects/:projectId/reports/:reportId/view"
+        element={
+          <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
+            <AgentLayout>
+              <ReportView />
             </AgentLayout>
           </PrivateRoute>
         }

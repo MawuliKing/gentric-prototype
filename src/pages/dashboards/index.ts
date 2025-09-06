@@ -5,4 +5,5 @@ export {
   AgentProjects,
   ProjectDetails,
   ReportSubmission,
+  ReportView,
 } from "./agent";

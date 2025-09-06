@@ -11,6 +11,7 @@ export {
   AgentProjects,
   ProjectDetails,
   ReportSubmission,
+  ReportView,
   Agents,
   Customers,
   Projects,

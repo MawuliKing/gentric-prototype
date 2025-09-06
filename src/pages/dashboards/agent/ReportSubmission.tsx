@@ -36,10 +36,76 @@ export const ReportSubmission: React.FC = () => {
   // Report submission mutation
   const reportSubmission = useReportSubmission();
 
+  // Utility function to clean form data and remove circular references
+  const cleanFormData = (data: any): any => {
+    if (data === null || data === undefined) {
+      return data;
+    }
+
+    if (
+      typeof data === "string" ||
+      typeof data === "number" ||
+      typeof data === "boolean"
+    ) {
+      return data;
+    }
+
+    if (data instanceof File) {
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map(cleanFormData);
+    }
+
+    if (typeof data === "object") {
+      // Skip objects that might have circular references (like DOM elements)
+      if (
+        data.constructor &&
+        data.constructor.name &&
+        (data.constructor.name.includes("HTML") ||
+          data.constructor.name.includes("Element") ||
+          data.constructor.name.includes("Node"))
+      ) {
+        return "[DOM Element]";
+      }
+
+      const cleaned: any = {};
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          cleaned[key] = cleanFormData(data[key]);
+        }
+      }
+      return cleaned;
+    }
+
+    return data;
+  };
+
   const handleInputChange = (fieldId: string, value: any) => {
+    // Ensure we only store primitive values, not DOM elements
+    let cleanValue = value;
+
+    // If it's an event object, extract the value
+    if (value && typeof value === "object" && value.target) {
+      // Check if it's a checkbox event with checked property
+      if (value.target.checked !== undefined) {
+        cleanValue = value.target.checked;
+      } else {
+        cleanValue = value.target.value;
+      }
+    }
+    // If it's a direct boolean value (from checkbox component), use it directly
+    else if (typeof value === "boolean") {
+      cleanValue = value;
+    }
+
+    // Clean the value to remove any potential circular references
+    cleanValue = cleanFormData(cleanValue);
+
     setFormData((prev) => ({
       ...prev,
-      [fieldId]: value,
+      [fieldId]: cleanValue,
     }));
   };
 
@@ -51,20 +117,26 @@ export const ReportSubmission: React.FC = () => {
     }
 
     try {
-      // Process form data and replace image fields with hardcoded URL
-      const processedFormData = Object.keys(formData).reduce((acc, key) => {
-        const field = template.sections
-          ?.flatMap((section) => section.fields)
-          ?.find((f) => f.id === key);
+      // Clean the form data to remove any circular references
+      const cleanedFormData = cleanFormData(formData);
 
-        if (field?.type === "image") {
-          acc[key] =
-            "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
-        } else {
-          acc[key] = formData[key];
-        }
-        return acc;
-      }, {} as Record<string, any>);
+      // Process form data and replace image fields with hardcoded URL
+      const processedFormData = Object.keys(cleanedFormData).reduce(
+        (acc, key) => {
+          const field = template.sections
+            ?.flatMap((section) => section.fields)
+            ?.find((f) => f.id === key);
+
+          if (field?.type === "image") {
+            acc[key] =
+              "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
+          } else {
+            acc[key] = cleanedFormData[key];
+          }
+          return acc;
+        },
+        {} as Record<string, any>
+      );
 
       // Structure data according to backend API specification
       const reportData: Array<{
@@ -89,10 +161,24 @@ export const ReportSubmission: React.FC = () => {
 
         section.fields?.forEach((field) => {
           if (processedFormData[field.id] !== undefined) {
+            // Convert all values to strings as required by the backend
+            let stringValue = processedFormData[field.id];
+
+            // Handle different data types
+            if (typeof stringValue === "boolean") {
+              stringValue = stringValue.toString();
+            } else if (typeof stringValue === "number") {
+              stringValue = stringValue.toString();
+            } else if (stringValue === null || stringValue === undefined) {
+              stringValue = "";
+            } else {
+              stringValue = String(stringValue);
+            }
+
             sectionFields.push({
               id: field.id,
               name: field.label,
-              value: processedFormData[field.id],
+              value: stringValue,
               type: field.type,
             });
           }
@@ -116,7 +202,8 @@ export const ReportSubmission: React.FC = () => {
         status: "SUBMITTED" as const,
       };
 
-      console.log("Submitting report:", payload);
+      // Safely log the payload without circular references
+      console.log("Submitting report:", JSON.parse(JSON.stringify(payload)));
 
       // Submit the report using the mutation
       await reportSubmission.mutateAsync(payload);

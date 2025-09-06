@@ -2,37 +2,7 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Card, Progress, StatusBadge, Tabs } from "../../../components";
 import { useProjectDetails } from "../../../hooks/useProjectDetails";
-
-// Mock submitted reports - in real app this would come from API
-const mockSubmittedReports = [
-  {
-    id: "submitted-1",
-    name: "Initial Assessment Report",
-    description:
-      "Complete initial assessment of the project requirements and scope",
-    submittedAt: "2024-01-14",
-    status: "SUBMITTED",
-    template: {
-      id: "1",
-      name: "Initial Assessment",
-      description: "Template for initial project assessment",
-      sections: [],
-    },
-  },
-  {
-    id: "submitted-2",
-    name: "Progress Report - Week 1",
-    description: "Weekly progress update for the first week of work",
-    submittedAt: "2024-01-21",
-    status: "SUBMITTED",
-    template: {
-      id: "2",
-      name: "Weekly Progress",
-      description: "Template for weekly progress reports",
-      sections: [],
-    },
-  },
-];
+import { useSubmittedReports } from "../../../hooks/useSubmittedReports";
 
 const getMockDueDate = (index: number) => {
   const today = new Date();
@@ -54,7 +24,18 @@ export const ProjectDetails: React.FC = () => {
     projectId: projectId || "",
   });
 
-  if (projectLoading) {
+  // Fetch submitted reports
+  const {
+    reports: submittedReports,
+    loading: reportsLoading,
+    error: reportsError,
+  } = useSubmittedReports({
+    projectId: projectId || "",
+    page: 1,
+    pageSize: 10,
+  });
+
+  if (projectLoading || reportsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -73,6 +54,10 @@ export const ProjectDetails: React.FC = () => {
         </Button>
       </div>
     );
+  }
+
+  if (reportsError) {
+    console.error("Error loading submitted reports:", reportsError);
   }
 
   const formatDate = (dateString: string) => {
@@ -366,10 +351,10 @@ export const ProjectDetails: React.FC = () => {
             {
               id: "submitted",
               label: "Submitted Reports",
-              count: mockSubmittedReports.length,
+              count: submittedReports.length,
               content: (
                 <div className="space-y-4">
-                  {mockSubmittedReports.map((report) => (
+                  {submittedReports.map((report) => (
                     <div
                       key={report.id}
                       className="border border-secondary-200 rounded-lg p-4"
@@ -377,25 +362,49 @@ export const ProjectDetails: React.FC = () => {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="text-heading-4 text-secondary-900 mb-2">
-                            {report.name}
+                            Report Submission
                           </h3>
                           <p className="text-body text-secondary-600 mb-3">
-                            {report.description}
+                            Submitted report with {report.reportData.length}{" "}
+                            section(s)
                           </p>
                           <div className="flex items-center space-x-4 text-sm text-secondary-500">
                             <span>
-                              Submitted {formatDate(report.submittedAt)}
+                              Submitted {formatDate(report.createdAt)}
                             </span>
-                            <span>Template: {report.template.name}</span>
+                            <span>Status: {report.status}</span>
+                            {report.approvedAt && (
+                              <span className="text-success-600">
+                                Approved {formatDate(report.approvedAt)}
+                              </span>
+                            )}
+                            {report.rejectedAt && (
+                              <span className="text-error-600">
+                                Rejected {formatDate(report.rejectedAt)}
+                              </span>
+                            )}
                           </div>
+                          {report.approvalComments && (
+                            <div className="mt-2 p-2 bg-success-50 border border-success-200 rounded text-sm text-success-700">
+                              <strong>Approval Comments:</strong>{" "}
+                              {report.approvalComments}
+                            </div>
+                          )}
+                          {report.rejectionComments && (
+                            <div className="mt-2 p-2 bg-error-50 border border-error-200 rounded text-sm text-error-700">
+                              <strong>Rejection Comments:</strong>{" "}
+                              {report.rejectionComments}
+                            </div>
+                          )}
                         </div>
                         <div className="flex space-x-2">
                           <Button
                             variant="secondary"
                             size="sm"
                             onClick={() => {
-                              // TODO: Navigate to view submitted report
-                              console.log("View submitted report:", report.id);
+                              navigate(
+                                `/agent/projects/${projectId}/reports/${report.id}/view`
+                              );
                             }}
                           >
                             <svg
@@ -424,7 +433,7 @@ export const ProjectDetails: React.FC = () => {
                     </div>
                   ))}
 
-                  {mockSubmittedReports.length === 0 && (
+                  {submittedReports.length === 0 && (
                     <div className="text-center py-8">
                       <div className="text-secondary-500 mb-4">
                         No reports submitted yet
