@@ -9,6 +9,7 @@ import {
   Checkbox,
 } from "../../../components";
 import { useReportTemplateDetails } from "../../../hooks/useReportTemplateDetails";
+import { useReportSubmission } from "../../../hooks/useReportSubmission";
 import type { FormField } from "../../../types/api";
 
 interface FormData {
@@ -22,8 +23,6 @@ export const ReportSubmission: React.FC = () => {
   }>();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Fetch report template details
   const {
@@ -34,6 +33,9 @@ export const ReportSubmission: React.FC = () => {
     templateId: templateId || "",
   });
 
+  // Report submission mutation
+  const reportSubmission = useReportSubmission();
+
   const handleInputChange = (fieldId: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
@@ -43,28 +45,86 @@ export const ReportSubmission: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitError(null);
+
+    if (!template || !projectId || !templateId) {
+      return;
+    }
 
     try {
-      // TODO: Submit the report data to the API
-      console.log("Submitting report:", {
-        templateId,
-        projectId,
-        formData,
+      // Process form data and replace image fields with hardcoded URL
+      const processedFormData = Object.keys(formData).reduce((acc, key) => {
+        const field = template.sections
+          ?.flatMap((section) => section.fields)
+          ?.find((f) => f.id === key);
+
+        if (field?.type === "image") {
+          acc[key] =
+            "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
+        } else {
+          acc[key] = formData[key];
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Structure data according to backend API specification
+      const reportData: Array<{
+        id: string;
+        name: string;
+        description: string;
+        data: Array<{
+          id: string;
+          name: string;
+          value: any;
+          type: string;
+        }>;
+      }> = [];
+
+      template.sections?.forEach((section) => {
+        const sectionFields: Array<{
+          id: string;
+          name: string;
+          value: any;
+          type: string;
+        }> = [];
+
+        section.fields?.forEach((field) => {
+          if (processedFormData[field.id] !== undefined) {
+            sectionFields.push({
+              id: field.id,
+              name: field.label,
+              value: processedFormData[field.id],
+              type: field.type,
+            });
+          }
+        });
+
+        if (sectionFields.length > 0) {
+          reportData.push({
+            id: section.id,
+            name: section.name,
+            description: section.name, // Using section name as description
+            data: sectionFields,
+          });
+        }
       });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Create payload according to backend API specification
+      const payload = {
+        reportData,
+        projectId,
+        reportTemplateId: templateId,
+        status: "SUBMITTED" as const,
+      };
 
-      // Navigate back to project details
+      console.log("Submitting report:", payload);
+
+      // Submit the report using the mutation
+      await reportSubmission.mutateAsync(payload);
+
+      // Navigate back to project details on success
       navigate(`/agent/projects/${projectId}`);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Failed to submit report"
-      );
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error submitting report:", error);
     }
   };
 
@@ -179,7 +239,7 @@ export const ReportSubmission: React.FC = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    // Convert file to base64 for storage
+                    // Convert file to base64 for preview
                     const reader = new FileReader();
                     reader.onload = (event) => {
                       handleInputChange(field.id, event.target?.result);
@@ -199,7 +259,7 @@ export const ReportSubmission: React.FC = () => {
                   <div className="space-y-2">
                     <img
                       src={value}
-                      alt="Uploaded image"
+                      alt="Selected image"
                       className="max-h-32 mx-auto rounded-md"
                     />
                     <p className="text-sm text-secondary-600">
@@ -332,12 +392,16 @@ export const ReportSubmission: React.FC = () => {
                   type="button"
                   variant="secondary"
                   onClick={() => navigate(`/agent/projects/${projectId}`)}
-                  disabled={isSubmitting}
+                  disabled={reportSubmission.isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary" disabled={isSubmitting}>
-                  {isSubmitting ? (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={reportSubmission.isPending}
+                >
+                  {reportSubmission.isPending ? (
                     <>
                       <svg
                         className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -371,7 +435,7 @@ export const ReportSubmission: React.FC = () => {
         </form>
 
         {/* Error Display */}
-        {submitError && (
+        {reportSubmission.error && (
           <div className="mt-4 bg-error-50 border border-error-200 rounded-md p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -391,7 +455,9 @@ export const ReportSubmission: React.FC = () => {
                 <h3 className="text-sm font-medium text-error-800">
                   Error Submitting Report
                 </h3>
-                <div className="mt-2 text-sm text-error-700">{submitError}</div>
+                <div className="mt-2 text-sm text-error-700">
+                  {reportSubmission.error.message || "Failed to submit report"}
+                </div>
               </div>
             </div>
           </div>
