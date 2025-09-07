@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, DataTable, Input, Modal, ModalBody, ModalFooter, Select, StatusBadge, Progress } from '../../../components'
 import { useCustomers } from '../../../hooks/useCustomers'
 import { useAgents } from '../../../hooks/useAgents'
@@ -16,6 +17,7 @@ const statusOptions = [
 ]
 
 export const Projects: React.FC = () => {
+    const navigate = useNavigate()
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [typeFilter, setTypeFilter] = useState<string>('')
@@ -31,10 +33,10 @@ export const Projects: React.FC = () => {
     const { customers, createCustomer, isCreating: isCreatingCustomer } = useCustomers({ page: 1, pageSize: 100 })
     const { agents, createAgent, isCreating: isCreatingAgent } = useAgents({ page: 1, pageSize: 100 })
     const { projectTypes, loading: projectTypesLoading } = useProjectTypes({ page: 1, pageSize: 100 })
-    const { 
-        projects, 
-        loading: projectsLoading, 
-        createProject, 
+    const {
+        projects,
+        loading: projectsLoading,
+        createProject,
         updateProject,
         isCreating: isCreatingProject,
         isUpdating: isUpdatingProject
@@ -280,8 +282,7 @@ export const Projects: React.FC = () => {
     }
 
     const handleView = (project: Project) => {
-        // TODO: Navigate to project details page
-        console.log('View project:', project.id)
+        navigate(`/admin/projects/${project.id}`)
     }
 
     const handleEdit = (project: Project) => {
@@ -657,14 +658,14 @@ export const Projects: React.FC = () => {
                                 )}
                             </div>
                         </div>
-                        <Input
+                        {/* <Input
                             label="Due Date"
                             type="date"
                             value={newProject.dueDate}
                             onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
                             error={errors.dueDate}
                             disabled={isCreatingProject}
-                        />
+                        /> */}
                     </div>
                 </ModalBody>
                 <ModalFooter>

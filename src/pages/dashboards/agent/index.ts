@@ -1,5 +1,5 @@
 export { AgentDashboard } from "./AgentDashboard";
 export { AgentProjects } from "./AgentProjects";
-export { ProjectDetails } from "./ProjectDetails";
+export { AgentProjectDetails } from "./AgentProjectDetails";
 export { ReportSubmission } from "./ReportSubmission";
-export { ReportView } from "./ReportView";
+export { AgentReportView } from "./AgentReportView";

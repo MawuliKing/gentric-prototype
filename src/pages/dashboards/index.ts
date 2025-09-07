@@ -1,9 +1,9 @@
-export { AdminDashboard, Agents, Customers, Projects } from "./admin";
+export { AdminDashboard, Agents, Customers, Projects, AdminProjectDetails, AdminReportView } from "./admin";
 export { CustomerDashboard } from "./customer";
 export {
   AgentDashboard,
   AgentProjects,
-  ProjectDetails,
+  AgentProjectDetails,
   ReportSubmission,
-  ReportView,
+  AgentReportView,
 } from "./agent";

@@ -9,9 +9,9 @@ export {
   CustomerDashboard,
   AgentDashboard,
   AgentProjects,
-  ProjectDetails,
+  AgentProjectDetails,
   ReportSubmission,
-  ReportView,
+  AgentReportView,
   Agents,
   Customers,
   Projects,
@@ -22,4 +22,6 @@ export {
   ProjectTypes,
   ProjectTypeDetails,
   FormBuilderPage,
+  AdminProjectDetails,
+  AdminReportView,
 } from "./dashboards/admin";

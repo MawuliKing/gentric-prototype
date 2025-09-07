@@ -19,15 +19,17 @@ import {
   CustomerDashboard,
   AgentDashboard,
   AgentProjects,
-  ProjectDetails,
+  AgentProjectDetails,
   ReportSubmission,
-  ReportView,
+  AgentReportView,
   ProjectTypes,
   ProjectTypeDetails,
   FormBuilderPage,
   Agents,
   Customers,
   Projects,
+  AdminProjectDetails,
+  AdminReportView,
 } from "./pages";
 import { ACCOUNT_TYPE } from "./types/api";
 
@@ -165,6 +167,26 @@ function App() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/admin/projects/:projectId"
+        element={
+          <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+            <AdminLayout>
+              <AdminProjectDetails />
+            </AdminLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/projects/:projectId/reports/:reportId/view"
+        element={
+          <PrivateRoute allowedRoles={[ACCOUNT_TYPE.ADMIN]}>
+            <AdminLayout>
+              <AdminReportView />
+            </AdminLayout>
+          </PrivateRoute>
+        }
+      />
 
       {/* Customer Dashboard - Only for CUSTOMER users */}
       <Route
@@ -204,7 +226,7 @@ function App() {
         element={
           <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
             <AgentLayout>
-              <ProjectDetails />
+              <AgentProjectDetails />
             </AgentLayout>
           </PrivateRoute>
         }
@@ -224,7 +246,7 @@ function App() {
         element={
           <PrivateRoute allowedRoles={[ACCOUNT_TYPE.AGENT]}>
             <AgentLayout>
-              <ReportView />
+              <AgentReportView />
             </AgentLayout>
           </PrivateRoute>
         }

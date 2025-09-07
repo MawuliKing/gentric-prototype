@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button, Card, StatusBadge } from "../../../components";
 import { useSubmittedReports } from "../../../hooks/useSubmittedReports";
 
-export const ReportView: React.FC = () => {
+export const AgentReportView: React.FC = () => {
   const { reportId, projectId } = useParams<{
     reportId: string;
     projectId: string;
@@ -232,11 +232,10 @@ export const ReportView: React.FC = () => {
                       ) : field.type === "boolean" ||
                         field.type === "checkbox" ? (
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            field.value === "true"
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${field.value === "true"
                               ? "bg-success-100 text-success-800"
                               : "bg-secondary-100 text-secondary-800"
-                          }`}
+                            }`}
                         >
                           {field.value === "true" ? "Yes" : "No"}
                         </span>

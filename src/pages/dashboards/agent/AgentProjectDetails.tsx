@@ -11,7 +11,7 @@ const getMockDueDate = (index: number) => {
   return dueDate.toISOString().split("T")[0];
 };
 
-export const ProjectDetails: React.FC = () => {
+export const AgentProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
 
@@ -103,15 +103,15 @@ export const ProjectDetails: React.FC = () => {
             project.status === "ACTIVE"
               ? "success"
               : project.status === "COMPLETED"
-              ? "info"
-              : project.status === "PENDING"
-              ? "warning"
-              : "error"
+                ? "info"
+                : project.status === "PENDING"
+                  ? "warning"
+                  : "error"
           }
         >
           {project.status
             ? project.status.charAt(0).toUpperCase() +
-              project.status.slice(1).toLowerCase()
+            project.status.slice(1).toLowerCase()
             : "Pending"}
         </StatusBadge>
       </div>
@@ -241,11 +241,11 @@ export const ProjectDetails: React.FC = () => {
                         <span className="text-sm text-secondary-600">
                           {project.reportProgress?.totalReports
                             ? Math.round(
-                                ((project.reportProgress?.completedReports ||
-                                  0) /
-                                  project.reportProgress.totalReports) *
-                                  100
-                              )
+                              ((project.reportProgress?.completedReports ||
+                                0) /
+                                project.reportProgress.totalReports) *
+                              100
+                            )
                             : 0}
                           %
                         </span>
@@ -254,8 +254,8 @@ export const ProjectDetails: React.FC = () => {
                         value={
                           project.reportProgress?.totalReports
                             ? ((project.reportProgress?.completedReports || 0) /
-                                project.reportProgress.totalReports) *
-                              100
+                              project.reportProgress.totalReports) *
+                            100
                             : 0
                         }
                         className="w-full"
@@ -335,16 +335,16 @@ export const ProjectDetails: React.FC = () => {
 
                   {(!project.projectType.reports ||
                     project.projectType.reports.length === 0) && (
-                    <div className="text-center py-8">
-                      <div className="text-secondary-500 mb-4">
-                        No reports assigned to this project
+                      <div className="text-center py-8">
+                        <div className="text-secondary-500 mb-4">
+                          No reports assigned to this project
+                        </div>
+                        <p className="text-sm text-secondary-400">
+                          Contact your administrator to get reports assigned to
+                          this project.
+                        </p>
                       </div>
-                      <p className="text-sm text-secondary-400">
-                        Contact your administrator to get reports assigned to
-                        this project.
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </div>
               ),
             },
