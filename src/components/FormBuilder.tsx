@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Card, Input, Select } from './index'
+import { Button, Card, Input, Select, ExcelUpload } from './index'
 import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 
 export interface FormField {
@@ -65,6 +65,20 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     const [showAddCategory, setShowAddCategory] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState('')
     const [newCategoryDescription, setNewCategoryDescription] = useState('')
+
+    const handleExcelFormGenerated = (newCategories: FormCategory[]) => {
+        // Replace existing categories with the ones generated from Excel
+        onCategoriesChange(newCategories)
+
+        // Reset other form states
+        setSelectedFieldType('')
+        setSelectedCategory('')
+        setEditingField(null)
+        setEditingCategory(null)
+        setShowAddCategory(false)
+        setNewCategoryName('')
+        setNewCategoryDescription('')
+    }
 
     const addCategory = () => {
         if (!newCategoryName.trim()) return
@@ -306,8 +320,18 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <div className="flex-1 p-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Panel - Field Types */}
+                        {/* Left Panel - Excel Upload & Field Types */}
                         <div className="space-y-4">
+                            <Card>
+                                <div className="p-4">
+                                    <h3 className="text-heading-4 mb-4">Generate from Excel</h3>
+                                    <ExcelUpload
+                                        onFormGenerated={handleExcelFormGenerated}
+                                        disabled={isSaving}
+                                    />
+                                </div>
+                            </Card>
+
                             <Card>
                                 <div className="p-4">
                                     <h3 className="text-heading-4 mb-4">Add Field</h3>

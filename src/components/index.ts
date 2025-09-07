@@ -34,3 +34,4 @@ export { PrivateRoute } from "./PrivateRoute";
 
 // Form Builder
 export { FormBuilder } from "./FormBuilder";
+export { ExcelUpload } from "./ExcelUpload";
