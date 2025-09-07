@@ -154,6 +154,19 @@ class ApiService {
     getCurrentUser() {
         return EncryptedStorage.getUserData();
     }
+
+    // Report Actions
+    async approveReport(reportId: string, comments: string): Promise<StructuredResponse> {
+        return this.patch(`/reports/${reportId}/approve`, { comments });
+    }
+
+    async rejectReport(reportId: string, comments: string): Promise<StructuredResponse> {
+        return this.patch(`/reports/${reportId}/reject`, { comments });
+    }
+
+    async deleteReport(reportId: string): Promise<StructuredResponse> {
+        return this.delete(`/reports/${reportId}`);
+    }
 }
 
 // Create and export a singleton instance

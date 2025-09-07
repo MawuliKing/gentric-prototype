@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, StatusBadge, Progress } from '../../../components'
+import { Button, Card, StatusBadge, Progress, Checkbox } from '../../../components'
 import { useProjectDetails } from '../../../hooks/useProjectDetails'
 import { useSubmittedReports } from '../../../hooks/useSubmittedReports'
 
 export const AdminProjectDetails: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>()
     const navigate = useNavigate()
+
+    // State for selected reports
+    const [selectedReports, setSelectedReports] = useState<string[]>([])
 
     // Fetch project details
     const {
@@ -82,6 +85,35 @@ export const AdminProjectDetails: React.FC = () => {
             default:
                 return 'info'
         }
+    }
+
+    // Handle checkbox selection
+    const handleReportSelection = (reportId: string, isSelected: boolean) => {
+        if (isSelected) {
+            setSelectedReports(prev => [...prev, reportId])
+        } else {
+            setSelectedReports(prev => prev.filter(id => id !== reportId))
+        }
+    }
+
+    // Handle select all checkbox
+    const handleSelectAll = (isSelected: boolean) => {
+        if (isSelected) {
+            setSelectedReports(submittedReports.map(report => report.id))
+        } else {
+            setSelectedReports([])
+        }
+    }
+
+    // Handle generate report
+    const handleGenerateReport = () => {
+        if (selectedReports.length === 0) return
+
+        // TODO: Implement report generation logic
+        console.log('Generating report for selected reports:', selectedReports)
+
+        // For now, just show an alert
+        alert(`Generating report for ${selectedReports.length} selected report(s)`)
     }
 
     return (
@@ -370,9 +402,33 @@ export const AdminProjectDetails: React.FC = () => {
             {/* Submitted Reports Section */}
             <Card className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-heading-2">Submitted Reports</h2>
-                    <div className="text-sm text-secondary-600">
-                        {submittedReports.length} report{submittedReports.length !== 1 ? 's' : ''} submitted
+                    <div className="flex items-center space-x-4">
+                        <h2 className="text-heading-2">Submitted Reports</h2>
+                        {submittedReports.length > 0 && (
+                            <Checkbox
+                                checked={selectedReports.length === submittedReports.length && submittedReports.length > 0}
+                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                label="Select All"
+                                size="sm"
+                            />
+                        )}
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        {selectedReports.length > 0 && (
+                            <Button
+                                variant="primary"
+                                onClick={handleGenerateReport}
+                                className="flex items-center"
+                            >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Generate Report ({selectedReports.length})
+                            </Button>
+                        )}
+                        <div className="text-sm text-secondary-600">
+                            {submittedReports.length} report{submittedReports.length !== 1 ? 's' : ''} submitted
+                        </div>
                     </div>
                 </div>
 
@@ -384,57 +440,66 @@ export const AdminProjectDetails: React.FC = () => {
                                 className="border border-secondary-200 rounded-lg p-6 hover:shadow-md transition-shadow"
                             >
                                 <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-3 mb-3">
-                                            <h3 className="text-heading-4 text-secondary-900">
-                                                Report #{report.id.slice(-8)}
-                                            </h3>
-                                            <StatusBadge status={getStatusColor(report.status)}>
-                                                {report.status.charAt(0).toUpperCase() + report.status.slice(1).toLowerCase()}
-                                            </StatusBadge>
+                                    <div className="flex items-start space-x-4 flex-1">
+                                        <div className="mt-1">
+                                            <Checkbox
+                                                checked={selectedReports.includes(report.id)}
+                                                onChange={(e) => handleReportSelection(report.id, e.target.checked)}
+                                                size="sm"
+                                            />
                                         </div>
-
-                                        <p className="text-body text-secondary-600 mb-4">
-                                            Submitted report with {report.reportData.length} section(s)
-                                        </p>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-secondary-500 mb-4">
-                                            <div>
-                                                <span className="font-medium">Submitted:</span> {formatDateTime(report.createdAt)}
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-3 mb-3">
+                                                <h3 className="text-heading-4 text-secondary-900">
+                                                    Report #{report.id.slice(-8)}
+                                                </h3>
+                                                <StatusBadge status={getStatusColor(report.status)}>
+                                                    {report.status.charAt(0).toUpperCase() + report.status.slice(1).toLowerCase()}
+                                                </StatusBadge>
                                             </div>
-                                            <div>
-                                                <span className="font-medium">Last Updated:</span> {formatDateTime(report.updatedAt)}
-                                            </div>
-                                            {report.approvedAt && (
+
+                                            <p className="text-body text-secondary-600 mb-4">
+                                                Submitted report with {report.reportData.length} section(s)
+                                            </p>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-secondary-500 mb-4">
                                                 <div>
-                                                    <span className="font-medium text-success-600">Approved:</span> {formatDateTime(report.approvedAt)}
+                                                    <span className="font-medium">Submitted:</span> {formatDateTime(report.createdAt)}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Last Updated:</span> {formatDateTime(report.updatedAt)}
+                                                </div>
+                                                {report.approvedAt && (
+                                                    <div>
+                                                        <span className="font-medium text-success-600">Approved:</span> {formatDateTime(report.approvedAt)}
+                                                    </div>
+                                                )}
+                                                {report.rejectedAt && (
+                                                    <div>
+                                                        <span className="font-medium text-error-600">Rejected:</span> {formatDateTime(report.rejectedAt)}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Approval/Rejection Comments */}
+                                            {report.approvalComments && (
+                                                <div className="mt-3 p-3 bg-success-50 border border-success-200 rounded-md">
+                                                    <div className="text-sm">
+                                                        <span className="font-medium text-success-700">Approval Comments:</span>
+                                                        <p className="text-success-600 mt-1">{report.approvalComments}</p>
+                                                    </div>
                                                 </div>
                                             )}
-                                            {report.rejectedAt && (
-                                                <div>
-                                                    <span className="font-medium text-error-600">Rejected:</span> {formatDateTime(report.rejectedAt)}
+
+                                            {report.rejectionComments && (
+                                                <div className="mt-3 p-3 bg-error-50 border border-error-200 rounded-md">
+                                                    <div className="text-sm">
+                                                        <span className="font-medium text-error-700">Rejection Comments:</span>
+                                                        <p className="text-error-600 mt-1">{report.rejectionComments}</p>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Approval/Rejection Comments */}
-                                        {report.approvalComments && (
-                                            <div className="mt-3 p-3 bg-success-50 border border-success-200 rounded-md">
-                                                <div className="text-sm">
-                                                    <span className="font-medium text-success-700">Approval Comments:</span>
-                                                    <p className="text-success-600 mt-1">{report.approvalComments}</p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {report.rejectionComments && (
-                                            <div className="mt-3 p-3 bg-error-50 border border-error-200 rounded-md">
-                                                <div className="text-sm">
-                                                    <span className="font-medium text-error-700">Rejection Comments:</span>
-                                                    <p className="text-error-600 mt-1">{report.rejectionComments}</p>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
                                     <div className="flex space-x-2 ml-4">
@@ -453,7 +518,9 @@ export const AdminProjectDetails: React.FC = () => {
                                             View Report
                                         </Button>
 
-                                        {report.status === 'PENDING' && (
+                                        {report.status} kjahkjhsaashjk
+
+                                        {report.status === 'SUBMITTED' && (
                                             <>
                                                 <Button
                                                     variant="success"
