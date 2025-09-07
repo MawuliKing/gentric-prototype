@@ -45,8 +45,8 @@ export const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
                         <Link
                             to="/customer"
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${location.pathname === '/customer'
-                                    ? 'border-success-500 text-success-600'
-                                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                                ? 'border-success-500 text-success-600'
+                                : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                                 }`}
                         >
                             Overview
@@ -54,13 +54,13 @@ export const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
                         <Link
                             to="/customer/reports"
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${location.pathname === '/customer/reports'
-                                    ? 'border-success-500 text-success-600'
-                                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                                ? 'border-success-500 text-success-600'
+                                : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                                 }`}
                         >
                             My Reports
                         </Link>
-                        <Link
+                        {/* <Link
                             to="/customer/templates"
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${location.pathname === '/customer/templates'
                                     ? 'border-success-500 text-success-600'
@@ -68,16 +68,16 @@ export const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
                                 }`}
                         >
                             Templates
-                        </Link>
-                        <Link
+                        </Link> */}
+                        {/* <Link
                             to="/customer/billing"
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${location.pathname === '/customer/billing'
-                                    ? 'border-success-500 text-success-600'
-                                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                                ? 'border-success-500 text-success-600'
+                                : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                                 }`}
                         >
                             Billing
-                        </Link>
+                        </Link> */}
                     </nav>
                 </div>
 

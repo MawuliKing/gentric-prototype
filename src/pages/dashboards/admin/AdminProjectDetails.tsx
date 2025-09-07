@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, StatusBadge, Progress, Checkbox } from '../../../components'
 import { useProjectDetails } from '../../../hooks/useProjectDetails'
 import { useSubmittedReports } from '../../../hooks/useSubmittedReports'
+import { generateProjectReportExcel } from '../../../utils/excelGenerator'
 
 export const AdminProjectDetails: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>()
@@ -107,13 +108,24 @@ export const AdminProjectDetails: React.FC = () => {
 
     // Handle generate report
     const handleGenerateReport = () => {
-        if (selectedReports.length === 0) return
+        if (selectedReports.length === 0 || !project) return
 
-        // TODO: Implement report generation logic
-        console.log('Generating report for selected reports:', selectedReports)
+        try {
+            // Filter reports to only include selected ones
+            const selectedReportData = submittedReports.filter(report =>
+                selectedReports.includes(report.id)
+            )
 
-        // For now, just show an alert
-        alert(`Generating report for ${selectedReports.length} selected report(s)`)
+            // Generate Excel file with project and selected reports
+            generateProjectReportExcel(project, selectedReportData)
+
+            // Reset selection after generating
+            setSelectedReports([])
+
+        } catch (error) {
+            console.error('Error generating Excel report:', error)
+            alert('Failed to generate Excel report. Please try again.')
+        }
     }
 
     return (
@@ -518,9 +530,7 @@ export const AdminProjectDetails: React.FC = () => {
                                             View Report
                                         </Button>
 
-                                        {report.status} kjahkjhsaashjk
-
-                                        {report.status === 'SUBMITTED' && (
+                                        {report.status === 'PENDING' && (
                                             <>
                                                 <Button
                                                     variant="success"

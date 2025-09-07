@@ -22,7 +22,7 @@ export const Login: React.FC = () => {
     return (
         <div className="fade-in">
             <div className="text-center mb-8">
-                <h1 className="text-heading-1 mb-4">Sign In to Gentric</h1>
+                <h1 className="text-heading-1 mb-4">Sign In to Gecric</h1>
                 <p className="text-body-large text-secondary-600">
                     Access your account to manage reports and collaborate with your team.
                 </p>

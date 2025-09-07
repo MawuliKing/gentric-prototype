@@ -2,9 +2,9 @@ import CryptoJS from 'crypto-js';
 
 // Storage keys
 const STORAGE_KEYS = {
-    USER_TOKEN: 'gentric_user_token',
-    USER_DATA: 'gentric_user_data',
-    ENCRYPTION_KEY: 'gentric_enc_key',
+    USER_TOKEN: 'gecric_user_token',
+    USER_DATA: 'gecric_user_data',
+    ENCRYPTION_KEY: 'gecric_enc_key',
 } as const;
 
 // Generate a unique encryption key based on browser fingerprint

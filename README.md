@@ -67,4 +67,4 @@ export default tseslint.config([
   },
 ])
 ```
-# gentric-prototype
+# gecric-prototype

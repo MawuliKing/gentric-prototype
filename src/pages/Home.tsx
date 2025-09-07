@@ -5,7 +5,7 @@ export const Home: React.FC = () => {
     return (
         <div className="fade-in">
             <div className="mb-8">
-                <h1 className="text-display mb-4">Welcome to Gentric</h1>
+                <h1 className="text-display mb-4">Welcome to Gecric</h1>
                 <p className="text-body-large text-secondary-600 max-w-2xl">
                     Your comprehensive report generation platform for organizations. Create, manage, and distribute professional reports with ease.
                 </p>

@@ -14,9 +14,9 @@ export const CustomerDashboard: React.FC = () => {
                     <Button variant="secondary" size="md">
                         View Reports
                     </Button>
-                    <Button variant="secondary" size="md">
+                    {/* <Button variant="secondary" size="md">
                         Browse Templates
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 

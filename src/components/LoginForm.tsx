@@ -76,7 +76,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, className = '' 
                 </div>
                 <h2 className="text-heading-2 text-secondary-900">Welcome Back</h2>
                 <p className="text-body text-secondary-600 mt-2">
-                    Sign in to your Gentric account
+                    Sign in to your Gecric account
                 </p>
             </div>
 
