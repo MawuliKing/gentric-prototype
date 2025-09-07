@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Card, Input, Select, ExcelUpload } from './index'
-import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Edit, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand } from 'lucide-react'
 
 export interface FormField {
     id: string
@@ -75,6 +75,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     const [showAddCategory, setShowAddCategory] = useState(false)
     const [newCategoryName, setNewCategoryName] = useState('')
     const [newCategoryDescription, setNewCategoryDescription] = useState('')
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
     const handleExcelFormGenerated = (newCategories: FormCategory[]) => {
         // Replace existing categories with the ones generated from Excel
@@ -88,6 +89,29 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         setShowAddCategory(false)
         setNewCategoryName('')
         setNewCategoryDescription('')
+
+        // Expand all categories when new form is generated from Excel
+        setExpandedCategories(new Set(newCategories.map(cat => cat.id)))
+    }
+
+    const toggleCategoryExpansion = (categoryId: string) => {
+        setExpandedCategories(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(categoryId)) {
+                newSet.delete(categoryId)
+            } else {
+                newSet.add(categoryId)
+            }
+            return newSet
+        })
+    }
+
+    const expandAllCategories = () => {
+        setExpandedCategories(new Set(categories.map(cat => cat.id)))
+    }
+
+    const collapseAllCategories = () => {
+        setExpandedCategories(new Set())
     }
 
     const addCategory = () => {
@@ -102,6 +126,10 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         }
 
         onCategoriesChange([...categories, newCategory])
+
+        // Expand the newly created category
+        setExpandedCategories(prev => new Set([...prev, newCategory.id]))
+
         setNewCategoryName('')
         setNewCategoryDescription('')
         setShowAddCategory(false)
@@ -544,7 +572,29 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                         <div className="lg:col-span-2">
                             <Card>
                                 <div className="p-6">
-                                    <h3 className="text-heading-4 mb-6">Form Preview</h3>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-heading-4">Form Preview</h3>
+                                        {categories.length > 0 && (
+                                            <div className="flex space-x-2">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={expandAllCategories}
+                                                    className="text-xs"
+                                                >
+                                                    Expand All
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={collapseAllCategories}
+                                                    className="text-xs"
+                                                >
+                                                    Collapse All
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
 
                                     {categories.length === 0 ? (
                                         <div className="text-center py-8">
@@ -556,102 +606,126 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                                             <p className="text-body text-secondary-600">No categories yet. Add a category to get started.</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-6">
-                                            {categories.map((category) => (
-                                                <div key={category.id} className="border border-secondary-200 rounded-lg p-4">
-                                                    <div className="flex justify-between items-center mb-4">
-                                                        <div>
-                                                            <h4 className="text-heading-5 text-secondary-900">{category.name}</h4>
-                                                            {category.description && (
-                                                                <p className="text-sm text-secondary-600">{category.description}</p>
-                                                            )}
+                                        <div className="space-y-4">
+                                            {categories.map((category) => {
+                                                const isExpanded = expandedCategories.has(category.id)
+                                                return (
+                                                    <div key={category.id} className="border border-secondary-200 rounded-lg">
+                                                        {/* Accordion Header */}
+                                                        <div
+                                                            className="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary-50 transition-colors"
+                                                            onClick={() => toggleCategoryExpansion(category.id)}
+                                                        >
+                                                            <div className="flex items-center space-x-3 flex-1">
+                                                                <div className="flex-shrink-0">
+                                                                    {isExpanded ? (
+                                                                        <ChevronDownExpand className="w-5 h-5 text-secondary-600" />
+                                                                    ) : (
+                                                                        <ChevronRight className="w-5 h-5 text-secondary-600" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <h4 className="text-heading-5 text-secondary-900">{category.name}</h4>
+                                                                    {category.description && (
+                                                                        <p className="text-sm text-secondary-600">{category.description}</p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-sm text-secondary-500">
+                                                                    {category.fields.length} field{category.fields.length !== 1 ? 's' : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex space-x-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    onClick={() => setEditingCategory(category)}
+                                                                    className="p-2"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="error"
+                                                                    size="sm"
+                                                                    onClick={() => deleteCategory(category.id)}
+                                                                    className="p-2"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex space-x-2">
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                onClick={() => setEditingCategory(category)}
-                                                                className="p-2"
-                                                            >
-                                                                <Edit className="w-4 h-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="error"
-                                                                size="sm"
-                                                                onClick={() => deleteCategory(category.id)}
-                                                                className="p-2"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </div>
 
-                                                    <div className="space-y-3">
-                                                        {category.fields.length === 0 ? (
-                                                            <p className="text-sm text-secondary-500 italic">No fields in this category</p>
-                                                        ) : (
-                                                            category.fields
-                                                                .sort((a, b) => a.order - b.order)
-                                                                .map((field) => (
-                                                                    <div key={field.id} className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-md">
-                                                                        <div className="flex-1">
-                                                                            <div className="flex items-center space-x-2 mb-2">
-                                                                                <span className="text-sm font-medium text-secondary-900">
-                                                                                    {field.label}
-                                                                                    {field.required && <span className="text-error-500 ml-1">*</span>}
-                                                                                </span>
-                                                                                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
-                                                                                    {FIELD_TYPES.find(f => f.value === field.type)?.label}
-                                                                                </span>
-                                                                            </div>
-                                                                            {renderFieldPreview(field)}
-                                                                        </div>
-                                                                        <div className="flex flex-col space-y-2">
-                                                                            <div className="flex space-x-1">
-                                                                                <Button
-                                                                                    variant="secondary"
-                                                                                    size="sm"
-                                                                                    onClick={() => setEditingField(field)}
-                                                                                    className="p-2"
-                                                                                >
-                                                                                    <Edit className="w-4 h-4" />
-                                                                                </Button>
-                                                                                <Button
-                                                                                    variant="error"
-                                                                                    size="sm"
-                                                                                    onClick={() => deleteField(field.id)}
-                                                                                    className="p-2"
-                                                                                >
-                                                                                    <Trash2 className="w-4 h-4" />
-                                                                                </Button>
-                                                                            </div>
-                                                                            <div className="flex flex-col space-y-1">
-                                                                                <Button
-                                                                                    variant="secondary"
-                                                                                    size="sm"
-                                                                                    onClick={() => moveField(field.id, 'up')}
-                                                                                    disabled={field.order === 0}
-                                                                                    className="p-2"
-                                                                                >
-                                                                                    <ChevronUp className="w-4 h-4" />
-                                                                                </Button>
-                                                                                <Button
-                                                                                    variant="secondary"
-                                                                                    size="sm"
-                                                                                    onClick={() => moveField(field.id, 'down')}
-                                                                                    disabled={field.order === category.fields.length - 1}
-                                                                                    className="p-2"
-                                                                                >
-                                                                                    <ChevronDown className="w-4 h-4" />
-                                                                                </Button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))
+                                                        {/* Accordion Content */}
+                                                        {isExpanded && (
+                                                            <div className="border-t border-secondary-200 p-4">
+                                                                <div className="space-y-3">
+                                                                    {category.fields.length === 0 ? (
+                                                                        <p className="text-sm text-secondary-500 italic">No fields in this category</p>
+                                                                    ) : (
+                                                                        category.fields
+                                                                            .sort((a, b) => a.order - b.order)
+                                                                            .map((field) => (
+                                                                                <div key={field.id} className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-md">
+                                                                                    <div className="flex-1">
+                                                                                        <div className="flex items-center space-x-2 mb-2">
+                                                                                            <span className="text-sm font-medium text-secondary-900">
+                                                                                                {field.label}
+                                                                                                {field.required && <span className="text-error-500 ml-1">*</span>}
+                                                                                            </span>
+                                                                                            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
+                                                                                                {FIELD_TYPES.find(f => f.value === field.type)?.label}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        {renderFieldPreview(field)}
+                                                                                    </div>
+                                                                                    <div className="flex flex-col space-y-2">
+                                                                                        <div className="flex space-x-1">
+                                                                                            <Button
+                                                                                                variant="secondary"
+                                                                                                size="sm"
+                                                                                                onClick={() => setEditingField(field)}
+                                                                                                className="p-2"
+                                                                                            >
+                                                                                                <Edit className="w-4 h-4" />
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                variant="error"
+                                                                                                size="sm"
+                                                                                                onClick={() => deleteField(field.id)}
+                                                                                                className="p-2"
+                                                                                            >
+                                                                                                <Trash2 className="w-4 h-4" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                        <div className="flex flex-col space-y-1">
+                                                                                            <Button
+                                                                                                variant="secondary"
+                                                                                                size="sm"
+                                                                                                onClick={() => moveField(field.id, 'up')}
+                                                                                                disabled={field.order === 0}
+                                                                                                className="p-2"
+                                                                                            >
+                                                                                                <ChevronUp className="w-4 h-4" />
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                variant="secondary"
+                                                                                                size="sm"
+                                                                                                onClick={() => moveField(field.id, 'down')}
+                                                                                                disabled={field.order === category.fields.length - 1}
+                                                                                                className="p-2"
+                                                                                            >
+                                                                                                <ChevronDown className="w-4 h-4" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     )}
                                 </div>
