@@ -101,19 +101,28 @@ export interface ReportSection {
 export interface FormField {
   id: string;
   type:
-    | "text"
-    | "textarea"
-    | "select"
-    | "checkbox"
-    | "radio"
-    | "date"
-    | "number"
-    | "boolean"
-    | "dropdown"
-    | "image";
+  | "text"
+  | "number"
+  | "textarea"
+  | "email"
+  | "password"
+  | "url"
+  | "tel"
+  | "date"
+  | "datetime"
+  | "daterange"
+  | "time"
+  | "color"
+  | "boolean"
+  | "checkbox"
+  | "dropdown"
+  | "file"
+  | "image"
+  | "select" // keeping for backward compatibility
+  | "radio"; // keeping for backward compatibility
   label: string;
   required: boolean;
-  options?: string[]; // For select, radio
+  options?: string[]; // For dropdown, select, radio
   placeholder?: string;
   order: number;
 }

@@ -4,7 +4,7 @@ import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 
 export interface FormField {
     id: string
-    type: 'text' | 'number' | 'textarea' | 'boolean' | 'checkbox' | 'dropdown' | 'image'
+    type: 'text' | 'number' | 'textarea' | 'boolean' | 'checkbox' | 'dropdown' | 'image' | 'date' | 'datetime' | 'daterange' | 'time' | 'email' | 'password' | 'url' | 'tel' | 'color' | 'file'
     label: string
     required: boolean
     placeholder?: string
@@ -39,9 +39,19 @@ const FIELD_TYPES = [
     { value: 'text', label: 'Text Input', icon: '📝' },
     { value: 'number', label: 'Number Input', icon: '🔢' },
     { value: 'textarea', label: 'Text Area', icon: '📄' },
+    { value: 'email', label: 'Email Input', icon: '📧' },
+    { value: 'password', label: 'Password Input', icon: '🔒' },
+    { value: 'url', label: 'URL Input', icon: '🔗' },
+    { value: 'tel', label: 'Phone Number', icon: '📞' },
+    { value: 'date', label: 'Date Picker', icon: '📅' },
+    { value: 'datetime', label: 'Date & Time', icon: '🕐' },
+    { value: 'daterange', label: 'Date Range', icon: '📆' },
+    { value: 'time', label: 'Time Picker', icon: '⏰' },
+    { value: 'color', label: 'Color Picker', icon: '🎨' },
     { value: 'boolean', label: 'True/False', icon: '✅' },
     { value: 'checkbox', label: 'Checkbox', icon: '☑️' },
     { value: 'dropdown', label: 'Dropdown', icon: '📋' },
+    { value: 'file', label: 'File Upload', icon: '📎' },
     { value: 'image', label: 'Image Selector', icon: '🖼️' }
 ]
 
@@ -206,6 +216,94 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                         disabled
                     />
                 )
+            case 'email':
+                return (
+                    <input
+                        type="email"
+                        className={baseClasses}
+                        placeholder={field.placeholder || "Enter email address"}
+                        disabled
+                    />
+                )
+            case 'password':
+                return (
+                    <input
+                        type="password"
+                        className={baseClasses}
+                        placeholder={field.placeholder || "Enter password"}
+                        disabled
+                    />
+                )
+            case 'url':
+                return (
+                    <input
+                        type="url"
+                        className={baseClasses}
+                        placeholder={field.placeholder || "https://example.com"}
+                        disabled
+                    />
+                )
+            case 'tel':
+                return (
+                    <input
+                        type="tel"
+                        className={baseClasses}
+                        placeholder={field.placeholder || "+1 (555) 123-4567"}
+                        disabled
+                    />
+                )
+            case 'date':
+                return (
+                    <input
+                        type="date"
+                        className={baseClasses}
+                        disabled
+                    />
+                )
+            case 'datetime':
+                return (
+                    <input
+                        type="datetime-local"
+                        className={baseClasses}
+                        disabled
+                    />
+                )
+            case 'daterange':
+                return (
+                    <div className="space-y-2">
+                        <input
+                            type="date"
+                            className={baseClasses}
+                            placeholder="Start date"
+                            disabled
+                        />
+                        <input
+                            type="date"
+                            className={baseClasses}
+                            placeholder="End date"
+                            disabled
+                        />
+                    </div>
+                )
+            case 'time':
+                return (
+                    <input
+                        type="time"
+                        className={baseClasses}
+                        disabled
+                    />
+                )
+            case 'color':
+                return (
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="color"
+                            className="h-10 w-16 border border-secondary-300 rounded-md cursor-pointer"
+                            disabled
+                        />
+                        <span className="text-sm text-secondary-600">Choose color</span>
+                    </div>
+                )
             case 'textarea':
                 return (
                     <textarea
@@ -238,6 +336,15 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                             <option key={index}>{option}</option>
                         ))}
                     </select>
+                )
+            case 'file':
+                return (
+                    <div className="border-2 border-dashed border-secondary-300 rounded-md p-4 text-center">
+                        <svg className="w-8 h-8 mx-auto text-secondary-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-sm text-secondary-500">Click to upload file</span>
+                    </div>
                 )
             case 'image':
                 return (
@@ -322,15 +429,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Left Panel - Excel Upload & Field Types */}
                         <div className="space-y-4">
-                            <Card>
-                                <div className="p-4">
-                                    <h3 className="text-heading-4 mb-4">Generate from Excel</h3>
-                                    <ExcelUpload
-                                        onFormGenerated={handleExcelFormGenerated}
-                                        disabled={isSaving}
-                                    />
-                                </div>
-                            </Card>
 
                             <Card>
                                 <div className="p-4">
@@ -427,6 +525,17 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            </Card>
+
+
+                            <Card>
+                                <div className="p-4">
+                                    <h3 className="text-heading-4 mb-4">Generate from Excel</h3>
+                                    <ExcelUpload
+                                        onFormGenerated={handleExcelFormGenerated}
+                                        disabled={isSaving}
+                                    />
                                 </div>
                             </Card>
                         </div>

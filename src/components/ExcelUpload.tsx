@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { Button } from './index'
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react'
+import { Button, Select, Checkbox } from './index'
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { type FormCategory, type FormField } from './FormBuilder'
 
 interface ExcelUploadProps {
@@ -9,24 +9,32 @@ interface ExcelUploadProps {
     disabled?: boolean
 }
 
-interface ExcelPreview {
+
+interface DetectedField extends FormField {
+    included: boolean
+    originalType: FormField['type']
     sheetName: string
-    headers: string[]
-    sampleData: any[]
-    rowCount: number
+}
+
+interface FieldSelectionModalProps {
+    detectedFields: DetectedField[]
+    onConfirm: (selectedFields: DetectedField[]) => void
+    onCancel: () => void
+    fileName: string
 }
 
 export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disabled = false }) => {
     const [isProcessing, setIsProcessing] = useState(false)
-    const [preview, setPreview] = useState<ExcelPreview[]>([])
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
     const [fileName, setFileName] = useState<string>('')
+    const [showFieldSelection, setShowFieldSelection] = useState(false)
+    const [detectedFields, setDetectedFields] = useState<DetectedField[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
 
 
-    const generateFormFromExcel = (workbook: XLSX.WorkBook): FormCategory[] => {
-        const categories: FormCategory[] = []
+    const detectFieldsFromExcel = (workbook: XLSX.WorkBook): DetectedField[] => {
+        const allDetectedFields: DetectedField[] = []
 
         workbook.SheetNames.forEach((sheetName, sheetIndex) => {
             const worksheet = workbook.Sheets[sheetName]
@@ -54,22 +62,52 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disab
             // Analyze the structure to identify form fields
             const formFields = extractFormFields(allCells, jsonData)
 
-            if (formFields.length === 0) return
+            // Convert to DetectedField format
+            const detectedFieldsForSheet: DetectedField[] = formFields.map((field, index) => ({
+                ...field,
+                id: `field-${Date.now()}-${sheetIndex}-${index}`,
+                included: true, // Include all fields by default
+                originalType: field.type,
+                sheetName: sheetName || `Sheet ${sheetIndex + 1}`,
+                categoryId: `category-${sheetName}-${sheetIndex}`,
+                order: index
+            }))
 
-            // Create category for this sheet
-            const category: FormCategory = {
-                id: `category-${Date.now()}-${sheetIndex}`,
-                name: sheetName || `Sheet ${sheetIndex + 1}`,
-                description: `Generated from Excel sheet: ${sheetName}`,
-                order: sheetIndex,
-                fields: formFields.map(field => ({ ...field, categoryId: `category-${Date.now()}-${sheetIndex}` }))
+            allDetectedFields.push(...detectedFieldsForSheet)
+        })
+
+        return allDetectedFields
+    }
+
+    const generateFormFromDetectedFields = (selectedFields: DetectedField[]): FormCategory[] => {
+        const categories: FormCategory[] = []
+        const categoriesMap = new Map<string, FormCategory>()
+
+        selectedFields.forEach((field) => {
+            if (!field.included) return
+
+            if (!categoriesMap.has(field.sheetName)) {
+                const category: FormCategory = {
+                    id: field.categoryId,
+                    name: field.sheetName,
+                    description: `Generated from Excel sheet: ${field.sheetName}`,
+                    order: categories.length,
+                    fields: []
+                }
+                categoriesMap.set(field.sheetName, category)
+                categories.push(category)
             }
 
-            categories.push(category)
+            const category = categoriesMap.get(field.sheetName)!
+            category.fields.push({
+                ...field,
+                order: category.fields.length
+            })
         })
 
         return categories
     }
+
 
     // Helper method to extract form fields from complex layouts
     const extractFormFields = (allCells: Array<{ row: number, col: number, value: any }>, jsonData: any[]): FormField[] => {
@@ -289,7 +327,6 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disab
         setIsProcessing(true)
         setError(null)
         setSuccess(null)
-        setPreview([])
         setFileName(file.name)
 
         try {
@@ -312,55 +349,27 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disab
                 throw new Error('No sheets found in the Excel file')
             }
 
-            // Generate preview
-            const previews: ExcelPreview[] = workbook.SheetNames.map(sheetName => {
-                const worksheet = workbook.Sheets[sheetName]
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
 
-                if (jsonData.length === 0) {
-                    return {
-                        sheetName,
-                        headers: [],
-                        sampleData: [],
-                        rowCount: 0
-                    }
-                }
+            // Detect all fields from the Excel file
+            const detectedFieldsArray = detectFieldsFromExcel(workbook)
 
-                const headers = jsonData[0] as string[]
-                const sampleData = jsonData.slice(1, 4) // First 3 data rows for preview
-
-                return {
-                    sheetName,
-                    headers: headers || [],
-                    sampleData,
-                    rowCount: jsonData.length - 1
-                }
-            })
-
-            setPreview(previews)
-
-            // Generate form structure
-            const categories = generateFormFromExcel(workbook)
-
-            if (categories.length === 0) {
+            if (detectedFieldsArray.length === 0) {
                 throw new Error('No valid data found to generate form fields')
             }
 
             // Debug information
-            console.log('Generated categories:', categories)
-            console.log('Total categories found:', categories.length)
-            categories.forEach((cat, index) => {
-                console.log(`\nSheet ${index + 1} (${cat.name}): ${cat.fields.length} fields`)
-                cat.fields.forEach((field, fieldIndex) => {
-                    console.log(`  Field ${fieldIndex + 1}: "${field.label}" (${field.type})`)
-                })
+            console.log('Detected fields:', detectedFieldsArray)
+            console.log('Total fields found:', detectedFieldsArray.length)
+            detectedFieldsArray.forEach((field, index) => {
+                console.log(`  Field ${index + 1}: "${field.label}" (${field.type}) - Sheet: ${field.sheetName}`)
             })
 
-            // Show success message
-            setSuccess(`Successfully analyzed Excel file! Found ${categories.length} sheet(s) with ${categories.reduce((total, cat) => total + cat.fields.length, 0)} field(s).`)
+            // Set detected fields and show selection modal
+            setDetectedFields(detectedFieldsArray)
+            setShowFieldSelection(true)
 
-            // Pass generated form to parent
-            onFormGenerated(categories)
+            // Show initial success message
+            setSuccess(`Successfully analyzed Excel file! Found ${detectedFieldsArray.length} field(s). Please review and select the fields you want to include.`)
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to process Excel file')
@@ -369,6 +378,30 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disab
             // Reset file input
             event.target.value = ''
         }
+    }
+
+    const handleFieldSelectionConfirm = (selectedFields: DetectedField[]) => {
+        try {
+            // Generate form categories from selected fields
+            const categories = generateFormFromDetectedFields(selectedFields)
+
+            // Pass generated form to parent
+            onFormGenerated(categories)
+
+            // Close modal and update success message
+            setShowFieldSelection(false)
+            const includedCount = selectedFields.filter(f => f.included).length
+            setSuccess(`Form generated successfully! Included ${includedCount} field(s) from your Excel file.`)
+
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to generate form from selected fields')
+        }
+    }
+
+    const handleFieldSelectionCancel = () => {
+        setShowFieldSelection(false)
+        setDetectedFields([])
+        setSuccess(null)
     }
 
     return (
@@ -459,59 +492,306 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({ onFormGenerated, disab
                 </div>
             )}
 
-            {/* Preview */}
-            {preview.length > 0 && (
-                <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-secondary-900">File Preview</h4>
-                    <div className="text-xs text-secondary-600 mb-2">File: {fileName}</div>
 
-                    {preview.map((sheet, index) => (
-                        <div key={index} className="border border-secondary-200 rounded-md p-4">
-                            <div className="flex justify-between items-center mb-3">
-                                <h5 className="text-sm font-medium text-secondary-800">
-                                    {sheet.sheetName}
-                                </h5>
-                                <span className="text-xs text-secondary-500">
-                                    {sheet.rowCount} rows, {sheet.headers.length} columns
-                                </span>
-                            </div>
+            {/* Field Selection Modal */}
+            {showFieldSelection && (
+                <FieldSelectionModal
+                    detectedFields={detectedFields}
+                    onConfirm={handleFieldSelectionConfirm}
+                    onCancel={handleFieldSelectionCancel}
+                    fileName={fileName}
+                />
+            )}
+        </div>
+    )
+}
 
-                            {sheet.headers.length > 0 && (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full text-xs">
-                                        <thead>
-                                            <tr className="bg-secondary-50">
-                                                {sheet.headers.map((header, i) => (
-                                                    <th key={i} className="px-2 py-1 text-left text-secondary-600 font-medium">
-                                                        {header}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sheet.sampleData.slice(0, 3).map((row: any[], rowIndex) => (
-                                                <tr key={rowIndex} className="border-t border-secondary-100">
-                                                    {sheet.headers.map((_, colIndex) => (
-                                                        <td key={colIndex} className="px-2 py-1 text-secondary-700">
-                                                            {row[colIndex] !== null && row[colIndex] !== undefined
-                                                                ? String(row[colIndex]).substring(0, 20) + (String(row[colIndex]).length > 20 ? '...' : '')
-                                                                : '-'
-                                                            }
-                                                        </td>
-                                                    ))}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    {sheet.rowCount > 3 && (
-                                        <div className="text-xs text-secondary-500 mt-2 text-center">
-                                            ... and {sheet.rowCount - 3} more rows
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+// Field Selection Modal Component
+const FieldSelectionModal: React.FC<FieldSelectionModalProps> = ({
+    detectedFields,
+    onConfirm,
+    onCancel,
+    fileName
+}) => {
+    const [fields, setFields] = useState<DetectedField[]>(detectedFields)
+    const [selectAll, setSelectAll] = useState(true)
+    const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null)
+
+    const FIELD_TYPES = [
+        { value: 'text', label: 'Text Input', icon: '📝' },
+        { value: 'number', label: 'Number Input', icon: '🔢' },
+        { value: 'textarea', label: 'Text Area', icon: '📄' },
+        { value: 'boolean', label: 'True/False', icon: '✅' },
+        { value: 'checkbox', label: 'Checkbox', icon: '☑️' },
+        { value: 'dropdown', label: 'Dropdown', icon: '📋' },
+        { value: 'image', label: 'Image Selector', icon: '🖼️' }
+    ]
+
+    const handleToggleField = (fieldId: string) => {
+        setFields(prev => prev.map(field =>
+            field.id === fieldId
+                ? { ...field, included: !field.included }
+                : field
+        ))
+    }
+
+    const handleFieldTypeChange = (fieldId: string, newType: FormField['type']) => {
+        setFields(prev => prev.map(field =>
+            field.id === fieldId
+                ? { ...field, type: newType }
+                : field
+        ))
+    }
+
+    const handleDeleteField = (fieldId: string) => {
+        setFields(prev => prev.filter(field => field.id !== fieldId))
+    }
+
+    const handleDeleteSection = (sheetName: string) => {
+        setDeleteConfirmation(sheetName)
+    }
+
+    const confirmDeleteSection = () => {
+        if (deleteConfirmation) {
+            setFields(prev => prev.filter(field => field.sheetName !== deleteConfirmation))
+            setDeleteConfirmation(null)
+        }
+    }
+
+    const cancelDeleteSection = () => {
+        setDeleteConfirmation(null)
+    }
+
+    const handleToggleAll = () => {
+        const newSelectAll = !selectAll
+        setSelectAll(newSelectAll)
+        setFields(prev => prev.map(field => ({ ...field, included: newSelectAll })))
+    }
+
+    const handleConfirm = () => {
+        onConfirm(fields)
+    }
+
+    const includedCount = fields.filter(f => f.included).length
+    const groupedBySheet = fields.reduce((acc, field) => {
+        if (!acc[field.sheetName]) {
+            acc[field.sheetName] = []
+        }
+        acc[field.sheetName].push(field)
+        return acc
+    }, {} as Record<string, DetectedField[]>)
+
+    return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+            <div className="flex min-h-screen items-center justify-center p-4">
+                <div className="relative bg-white rounded-lg shadow-strong w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-6 border-b border-secondary-200">
+                        <div>
+                            <h3 className="text-heading-3 text-secondary-900">
+                                Select Form Fields
+                            </h3>
+                            <p className="text-sm text-secondary-600 mt-1">
+                                File: {fileName} • {fields.length} fields detected • {includedCount} selected
+                            </p>
                         </div>
-                    ))}
+                        <button
+                            onClick={onCancel}
+                            className="p-2 hover:bg-secondary-100 rounded-md transition-colors"
+                        >
+                            <X className="w-5 h-5 text-secondary-400" />
+                        </button>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="p-6 border-b border-secondary-200 bg-secondary-50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={handleToggleAll}
+                                    className="flex items-center space-x-2 text-sm font-medium text-primary-700 hover:text-primary-800"
+                                >
+                                    {selectAll ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    <span>{selectAll ? 'Deselect All' : 'Select All'}</span>
+                                </button>
+                                <div className="text-sm text-secondary-600">
+                                    {includedCount} of {fields.length} fields selected
+                                </div>
+                            </div>
+                            <div className="text-xs text-secondary-500">
+                                💡 Tip: You can change field types, toggle inclusion, delete individual fields, or delete entire sections
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Field List */}
+                    <div className="flex-1 overflow-y-auto max-h-96 p-6">
+                        {fields.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-secondary-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <FileSpreadsheet className="w-8 h-8 text-secondary-400" />
+                                </div>
+                                <h4 className="text-lg font-medium text-secondary-900 mb-2">No fields remaining</h4>
+                                <p className="text-secondary-600">All fields have been deleted. Please cancel and try again.</p>
+                            </div>
+                        ) : (
+                            Object.entries(groupedBySheet).map(([sheetName, sheetFields]) => (
+                                <div key={sheetName} className="mb-6">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-lg font-semibold text-secondary-800 flex items-center">
+                                            <FileSpreadsheet className="w-5 h-5 mr-2 text-primary-600" />
+                                            {sheetName}
+                                            <span className="ml-2 text-sm font-normal text-secondary-500">
+                                                ({sheetFields.length} fields)
+                                            </span>
+                                        </h4>
+                                        <button
+                                            onClick={() => handleDeleteSection(sheetName)}
+                                            className="p-2 text-error-400 hover:text-error-600 hover:bg-error-50 rounded-md transition-colors"
+                                            title={`Delete all fields from ${sheetName}`}
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {sheetFields.map((field) => (
+                                            <div
+                                                key={field.id}
+                                                className={`border rounded-lg p-4 transition-all ${field.included
+                                                    ? 'border-primary-200 bg-primary-50'
+                                                    : 'border-secondary-200 bg-secondary-50 opacity-60'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start space-x-4">
+                                                    {/* Include/Exclude Toggle */}
+                                                    <div className="flex items-center pt-1">
+                                                        <Checkbox
+                                                            checked={field.included}
+                                                            onChange={() => handleToggleField(field.id)}
+                                                            label=""
+                                                        />
+                                                    </div>
+
+                                                    {/* Field Info */}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h5 className="font-medium text-secondary-900">
+                                                                {field.label}
+                                                            </h5>
+                                                            {field.type !== field.originalType && (
+                                                                <span className="text-xs bg-warning-100 text-warning-700 px-2 py-1 rounded">
+                                                                    Modified
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {field.placeholder && (
+                                                            <p className="text-sm text-secondary-600 mb-2">
+                                                                Placeholder: {field.placeholder}
+                                                            </p>
+                                                        )}
+
+                                                        {field.options && field.options.length > 0 && (
+                                                            <div className="text-sm text-secondary-600 mb-2">
+                                                                <span className="font-medium">Options:</span> {field.options.join(', ')}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Field Type Selector */}
+                                                    <div className="w-48">
+                                                        <Select
+                                                            label=""
+                                                            value={field.type}
+                                                            onChange={(e) => handleFieldTypeChange(field.id, e.target.value as FormField['type'])}
+                                                            options={FIELD_TYPES.map(type => ({
+                                                                value: type.value,
+                                                                label: `${type.icon} ${type.label}`
+                                                            }))}
+                                                            disabled={!field.included}
+                                                        />
+                                                    </div>
+
+                                                    {/* Delete Button */}
+                                                    <div className="flex items-center">
+                                                        <button
+                                                            onClick={() => handleDeleteField(field.id)}
+                                                            className="p-2 text-error-400 hover:text-error-600 hover:bg-error-50 rounded-md transition-colors"
+                                                            title="Delete field"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-6 border-t border-secondary-200 bg-secondary-50">
+                        <div className="flex justify-between items-center">
+                            <div className="text-sm text-secondary-600">
+                                {includedCount} field(s) will be added to your form
+                            </div>
+                            <div className="flex space-x-3">
+                                <Button variant="secondary" onClick={onCancel}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={handleConfirm}
+                                    disabled={includedCount === 0 || fields.length === 0}
+                                >
+                                    Generate Form ({includedCount} fields)
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Delete Section Confirmation Dialog */}
+            {deleteConfirmation && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                    <div className="bg-white rounded-lg shadow-strong p-6 max-w-md mx-4">
+                        <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-error-100 rounded-full flex items-center justify-center">
+                                    <Trash2 className="w-5 h-5 text-error-600" />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-medium text-secondary-900 mb-2">
+                                    Delete Section
+                                </h3>
+                                <p className="text-sm text-secondary-600 mb-4">
+                                    Are you sure you want to delete all fields from "{deleteConfirmation}"?
+                                    This action cannot be undone.
+                                </p>
+                                <div className="flex space-x-3">
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={cancelDeleteSection}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="error"
+                                        size="sm"
+                                        onClick={confirmDeleteSection}
+                                    >
+                                        Delete Section
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

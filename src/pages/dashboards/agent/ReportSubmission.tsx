@@ -130,6 +130,16 @@ export const ReportSubmission: React.FC = () => {
           if (field?.type === "image") {
             acc[key] =
               "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
+          } else if (field?.type === "file") {
+            acc[key] = "https://example.com/sample-file.pdf";
+          } else if (field?.type === "daterange") {
+            // Convert daterange object to string
+            const dateRange = cleanedFormData[key];
+            if (dateRange && typeof dateRange === "object") {
+              acc[key] = `${dateRange.startDate || ""} - ${dateRange.endDate || ""}`;
+            } else {
+              acc[key] = cleanedFormData[key];
+            }
           } else {
             acc[key] = cleanedFormData[key];
           }
@@ -244,6 +254,58 @@ export const ReportSubmission: React.FC = () => {
           />
         );
 
+      case "email":
+        return (
+          <Input
+            key={field.id}
+            label={field.label}
+            type="email"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || "Enter email address"}
+            required={field.required}
+          />
+        );
+
+      case "password":
+        return (
+          <Input
+            key={field.id}
+            label={field.label}
+            type="password"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || "Enter password"}
+            required={field.required}
+          />
+        );
+
+      case "url":
+        return (
+          <Input
+            key={field.id}
+            label={field.label}
+            type="url"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || "https://example.com"}
+            required={field.required}
+          />
+        );
+
+      case "tel":
+        return (
+          <Input
+            key={field.id}
+            label={field.label}
+            type="tel"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || "+1 (555) 123-4567"}
+            required={field.required}
+          />
+        );
+
       case "textarea":
         return (
           <Textarea
@@ -256,7 +318,118 @@ export const ReportSubmission: React.FC = () => {
           />
         );
 
+      case "date":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <input
+              type="date"
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              required={field.required}
+            />
+          </div>
+        );
+
+      case "datetime":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <input
+              type="datetime-local"
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              required={field.required}
+            />
+          </div>
+        );
+
+      case "daterange":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-secondary-600 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={value?.startDate || ""}
+                  onChange={(e) => handleInputChange(field.id, { ...value, startDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required={field.required}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-secondary-600 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={value?.endDate || ""}
+                  onChange={(e) => handleInputChange(field.id, { ...value, endDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required={field.required}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case "time":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <input
+              type="time"
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              required={field.required}
+            />
+          </div>
+        );
+
+      case "color":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="color"
+                value={value || "#000000"}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                className="h-10 w-16 border border-secondary-300 rounded-md cursor-pointer"
+                required={field.required}
+              />
+              <input
+                type="text"
+                value={value || ""}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                placeholder="#000000"
+                className="flex-1 px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                pattern="^#[0-9A-Fa-f]{6}$"
+              />
+            </div>
+          </div>
+        );
+
       case "dropdown":
+      case "select": // For backward compatibility
         return (
           <div key={field.id} className="space-y-2">
             <label className="block text-sm font-medium text-secondary-700">
@@ -307,6 +480,107 @@ export const ReportSubmission: React.FC = () => {
               onChange={(checked) => handleInputChange(field.id, checked)}
               required={field.required}
             />
+          </div>
+        );
+
+      case "radio": // For backward compatibility
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-2">
+              {field.options?.map((option, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name={field.id}
+                    value={option}
+                    checked={value === option}
+                    onChange={(e) => handleInputChange(field.id, e.target.value)}
+                    className="text-primary-600 focus:ring-primary-500"
+                    required={field.required && index === 0}
+                  />
+                  <label className="text-sm text-secondary-700">{option}</label>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "file":
+        return (
+          <div key={field.id} className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              {field.label}
+              {field.required && <span className="text-error-500 ml-1">*</span>}
+            </label>
+            <div className="border-2 border-dashed border-secondary-300 rounded-lg p-6 text-center hover:border-secondary-400 transition-colors">
+              <input
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Store the file name for display, but use placeholder URL for submission
+                    handleInputChange(field.id, file.name);
+                  }
+                }}
+                className="hidden"
+                id={`file-${field.id}`}
+                required={field.required}
+              />
+              <label
+                htmlFor={`file-${field.id}`}
+                className="cursor-pointer block"
+              >
+                {value ? (
+                  <div className="space-y-2">
+                    <svg
+                      className="w-8 h-8 mx-auto text-primary-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="text-sm text-secondary-900 font-medium">
+                      {value}
+                    </p>
+                    <p className="text-sm text-secondary-600">
+                      Click to change file
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <svg
+                      className="w-8 h-8 mx-auto text-secondary-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    <p className="text-sm text-secondary-600">
+                      Click to upload file
+                    </p>
+                    <p className="text-xs text-secondary-500">
+                      Any file type accepted
+                    </p>
+                  </div>
+                )}
+              </label>
+            </div>
           </div>
         );
 
